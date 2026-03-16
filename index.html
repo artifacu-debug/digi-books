@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digibooks — Wolfsonian</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #111;
+    --paper: #f0f0f0;
+    --mid: #777;
+    /* --page-w and --page-h are set dynamically by JS on load + resize */
+    --page-w: 640px;
+    --page-h: 461px;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--ink);
+    font-family: 'Source Sans 3', 'Aptos', 'Calibri', 'Segoe UI', Arial, sans-serif;
+    color: var(--paper);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none; z-index: 9998;
+  }
+
+  /* ── Header ── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px 14px;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(17,17,17,0.97) 70%, transparent);
+  }
+  .wordmark {
+    font-weight: 600; font-size: 14px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--paper);
+  }
+  .page-counter {
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--mid); text-transform: uppercase; font-weight: 300;
+  }
+  .page-counter span { color: var(--paper); font-weight: 600; }
+
+  /* ── Stage ── */
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 2200px;
+  }
+
+  /* ── Book ── */
+  #book {
+    position: relative;
+    width: calc(var(--page-w) * 2);
+    height: var(--page-h);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.85));
+    flex-shrink: 0;
+  }
+
+  /* ── Spine ── */
+  #spine {
+    position: absolute; top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 8px;
+    background: linear-gradient(to right, #000, #2a2a2a, #000);
+    z-index: 50;
+    box-shadow: 0 0 18px rgba(0,0,0,0.9);
+  }
+  #spine::before, #spine::after {
+    content: '';
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #555;
+  }
+  #spine::before { top: 20px; }
+  #spine::after  { bottom: 20px; }
+
+  /* ── Pages ── */
+  .page {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 0.72s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+    cursor: pointer;
+  }
+  .page.right-side { right: 0; transform-origin: right center; }
+
+  .page-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .page-front { background: #fff; }
+  .page-back  { background: #fff; transform: rotateY(180deg); }
+  .page-face img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; background: #fff; }
+
+  .page-face::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+  .page-front::after { background: linear-gradient(to right, rgba(0,0,0,0.1) 0%, transparent 22%); }
+  .page-back::after  { background: linear-gradient(to left,  rgba(0,0,0,0.1) 0%, transparent 22%); }
+
+  .page.flipping-forward { transform: rotateY(-180deg); z-index: 20 !important; }
+  .page.right-side.flipping-forward { transform: rotateY(180deg); }
+
+  /* ── Panels ── */
+  #left-panel, #right-panel {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    overflow: hidden;
+  }
+  #left-panel { left: 0; }
+  #right-panel { right: 0; }
+  #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
+
+  /* ── Controls ── */
+  #controls {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; padding: 22px 36px 28px;
+    background: linear-gradient(to top, rgba(17,17,17,0.97) 60%, transparent);
+    z-index: 100;
+  }
+  .nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: var(--paper);
+    cursor: pointer; transition: all 0.2s; font-size: 16px;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+  .nav-btn:disabled { opacity: 0.15; cursor: default; }
+  .nav-btn:disabled:hover { background: transparent; border-color: rgba(255,255,255,0.2); }
+
+  #progress-track {
+    position: relative; width: 280px; height: 1px;
+    background: rgba(255,255,255,0.15); cursor: pointer;
+  }
+  #progress-fill { height: 100%; background: var(--paper); transition: width 0.4s ease; }
+  #progress-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 8px; height: 8px; background: var(--paper);
+    border-radius: 50%; transition: left 0.4s ease; pointer-events: none;
+  }
+
+  .hint {
+    font-size: 10px; letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.2); text-transform: uppercase;
+    text-align: center; font-weight: 300;
+  }
+
+  /* ── Cover ── */
+  #cover-page {
+    position: absolute; inset: 0; background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    transition: opacity 0.8s ease, pointer-events 0s 0.8s;
+  }
+  #cover-page.hidden { opacity: 0; pointer-events: none; }
+  .cover-inner { text-align: center; }
+  .cover-rule { width: 40px; height: 1px; background: rgba(255,255,255,0.25); margin: 0 auto 28px; }
+  .cover-eyebrow {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--mid); margin-bottom: 14px;
+  }
+  .cover-title {
+    font-size: 56px; font-weight: 300; letter-spacing: 0.12em;
+    line-height: 1.05; color: var(--paper);
+    margin-bottom: 10px; text-transform: uppercase;
+  }
+  .cover-subtitle {
+    font-style: italic; font-size: 14px; font-weight: 300;
+    color: var(--mid); letter-spacing: 0.28em;
+    margin-bottom: 38px; text-transform: uppercase;
+  }
+  .open-btn {
+    display: inline-block; padding: 11px 34px;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--paper); background: transparent;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    font-weight: 400; cursor: pointer; transition: all 0.25s;
+    font-family: inherit;
+  }
+  .open-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+
+  .home-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--mid); cursor: pointer;
+    font-family: inherit; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400;
+    padding: 6px 14px; transition: all 0.2s;
+  }
+  .home-btn:hover { border-color: rgba(255,255,255,0.5); color: var(--paper); }
+
+  .fs-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--mid); cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .fs-btn:hover { border-color: rgba(255,255,255,0.5); color: var(--paper); }
+  .fs-btn svg { width: 14px; height: 14px; fill: currentColor; }
+  #thumb-strip {
+    position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px;
+    z-index: 90; max-height: 70vh; overflow-y: auto; scrollbar-width: none;
+  }
+  #thumb-strip::-webkit-scrollbar { display: none; }
+  .thumb {
+    width: 36px; height: 26px; overflow: hidden; cursor: pointer;
+    border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0;
+  }
+  .thumb:hover { opacity: 0.65; border-color: rgba(255,255,255,0.3); }
+  .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+</style>
+</head>
+<body>
+
+<div id="cover-page">
+  <div class="cover-inner">
+    <div class="cover-rule"></div>
+    <div class="cover-eyebrow">Wolfsonian</div>
+    <div class="cover-title">Digibooks</div>
+    <div class="cover-subtitle">Proof of Concept</div>
+    <div style="max-width:420px; margin: 0 auto 38px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 22px;">
+      <div style="font-size:14px; font-weight:600; letter-spacing:0.06em; color:var(--paper); margin-bottom:10px;">Insectes, c. 1925</div>
+      <div style="font-size:13px; font-weight:300; line-height:1.7; color:var(--mid);">A companion to <em>Papillons</em>, this portfolio takes insects as its subject. While the precise renderings provided detailed information, Séguy also hoped that artists and designers would be inspired by the abstracted patterns he based off of the scientific illustrations.</div>
+    </div>
+    <button class="open-btn" onclick="openBook()">Open Digibook</button>
+  </div>
+</div>
+
+<header>
+  <div class="wordmark">Wolfsonian</div>
+  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">22</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Toggle fullscreen">
+      <svg id="fs-icon-expand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
+      </svg>
+      <svg id="fs-icon-compress" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <path d="M5 16h-2v3h3v-2h-1v-1zm-2-3h2V5h8V3H3v10zm16-8h-1v1h-2v2h3V5zm2-2h-7v2h5v8h2V3zM19 19h-3v2h5v-5h-2v3zm-6 0H5v-8H3v10h10v-2z"/>
+      </svg>
+    </button>
+    <button class="home-btn" onclick="goHome()" title="Back to cover">&#8592; Home</button>
+  </div>
+</header>
+
+<div id="thumb-strip"></div>
+
+<div id="stage">
+  <div id="book">
+    <div id="spine"></div>
+    <div id="left-panel"><img id="left-img" src="" alt=""></div>
+    <div id="right-panel"><img id="right-img" src="" alt=""></div>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="nav-btn" id="btn-first" onclick="goToPage(0)" title="First page">&#10073;&#9664;</button>
+  <button class="nav-btn" id="btn-prev"  onclick="turnPage(-1)" title="Previous">&#9664;</button>
+  <div id="progress-track" onclick="scrubTo(event)">
+    <div id="progress-fill"></div>
+    <div id="progress-thumb"></div>
+  </div>
+  <button class="nav-btn" id="btn-next"  onclick="turnPage(1)"  title="Next">&#9654;</button>
+  <button class="nav-btn" id="btn-last"  onclick="goToPage(TOTAL_SPREADS-1)" title="Last page">&#9654;&#10073;</button>
+</div>
+<div class="hint" style="position:fixed;bottom:8px;left:0;right:0;z-index:101;">
+  Click or swipe panels · Arrow keys · Space
+</div>
+
+<script>
+// ─── Config ────────────────────────────────────────────────────
+const TOTAL_IMAGES  = 24;
+// spread 0 = cover (image 1, right only)
+// spreads 1–11 = two-page pairs (images 2–23)
+// spread 12 = back cover (image 24, left only)
+const TOTAL_SPREADS = TOTAL_IMAGES / 2 + 1;  // = 13
+const IMG_DIR = 'pages/';
+const IMG_EXT = '.jpg';
+
+// ─── Spread map ────────────────────────────────────────────────
+function getSpread(s) {
+  if (s === 0)                   return { left: null, right: 1 };
+  if (s === TOTAL_SPREADS - 1)   return { left: TOTAL_IMAGES, right: null };
+  return { left: s * 2, right: s * 2 + 1 };
+}
+
+// ─── Aspect ratio — detected from first image ──────────────────
+let PAGE_ASPECT = 680 / 490; // fallback
+
+// ─── Responsive sizing ─────────────────────────────────────────
+function resizeBook() {
+  const leftPad  = 100;
+  const rightPad = 40;
+  const vPad     = 170;
+
+  const availW = window.innerWidth  - leftPad - rightPad;
+  const availH = window.innerHeight - vPad;
+
+  const maxPageW = 680, maxPageH = 490;
+
+  let pageW = Math.min(maxPageW, Math.floor(availW / 2));
+  let pageH = Math.round(pageW / PAGE_ASPECT);
+
+  if (pageH > availH) {
+    pageH = Math.min(maxPageH, availH);
+    pageW = Math.round(pageH * PAGE_ASPECT);
+  }
+
+  const root = document.documentElement;
+  root.style.setProperty('--page-w', pageW + 'px');
+  root.style.setProperty('--page-h', pageH + 'px');
+
+  const stage = document.getElementById('stage');
+  stage.style.paddingLeft  = leftPad  + 'px';
+  stage.style.paddingRight = rightPad + 'px';
+}
+
+// ─── State ─────────────────────────────────────────────────────
+let current = 0, isAnimating = false;
+
+// ─── Element refs ──────────────────────────────────────────────
+const book       = document.getElementById('book');
+const leftPanel  = document.getElementById('left-panel');
+const rightPanel = document.getElementById('right-panel');
+const leftImg    = document.getElementById('left-img');
+const rightImg   = document.getElementById('right-img');
+const curEl      = document.getElementById('cur-page');
+const fillEl     = document.getElementById('progress-fill');
+const thumbEl    = document.getElementById('progress-thumb');
+const thumbStrip = document.getElementById('thumb-strip');
+
+function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
+function makeImgStyle(el) {
+  el.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#fff;';
+}
+
+// ─── Build thumbnails ──────────────────────────────────────────
+function buildThumbs() {
+  for (let s = 0; s < TOTAL_SPREADS; s++) {
+    const sp  = getSpread(s);
+    const rep = sp.right || sp.left;
+    const d   = document.createElement('div');
+    d.className = 'thumb';
+    d.title = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back cover' : 'Pages ' + sp.left + '–' + sp.right;
+    const img = document.createElement('img');
+    img.src = imgSrc(rep); img.alt = d.title;
+    d.appendChild(img);
+    d.addEventListener('click', () => goToPage(s));
+    thumbStrip.appendChild(d);
+  }
+}
+
+// ─── Render spread ─────────────────────────────────────────────
+function renderSpread(s) {
+  const sp = getSpread(s);
+
+  if (sp.left) {
+    leftImg.src = imgSrc(sp.left); leftImg.alt = 'Page ' + sp.left;
+    leftPanel.style.visibility = 'visible';
+  } else {
+    leftImg.src = ''; leftPanel.style.visibility = 'hidden';
+  }
+
+  if (sp.right) {
+    rightImg.src = imgSrc(sp.right); rightImg.alt = 'Page ' + sp.right;
+    rightPanel.style.visibility = 'visible';
+  } else {
+    rightImg.src = ''; rightPanel.style.visibility = 'hidden';
+  }
+
+  if (s === 0) curEl.textContent = 'Cover';
+  else if (s === TOTAL_SPREADS - 1) curEl.textContent = 'Back';
+  else curEl.textContent = sp.left + '–' + sp.right;
+
+  const pct = (s / (TOTAL_SPREADS - 1)) * 100;
+  fillEl.style.width = pct + '%';
+  thumbEl.style.left = pct + '%';
+
+  document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
+  const active = thumbStrip.children[s];
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  document.getElementById('btn-first').disabled = s === 0;
+  document.getElementById('btn-prev').disabled  = s === 0;
+  document.getElementById('btn-next').disabled  = s >= TOTAL_SPREADS - 1;
+  document.getElementById('btn-last').disabled  = s >= TOTAL_SPREADS - 1;
+}
+
+// ─── Page turn ─────────────────────────────────────────────────
+function turnPage(dir) {
+  if (isAnimating) return;
+  const next = current + dir;
+  if (next < 0 || next >= TOTAL_SPREADS) return;
+  isAnimating = true;
+
+  const curSp  = getSpread(current);
+  const nextSp = getSpread(next);
+
+  const page  = document.createElement('div');
+  page.className = 'page';
+  page.style.zIndex = 10;
+
+  const front = document.createElement('div'); front.className = 'page-face page-front';
+  const back  = document.createElement('div'); back.className  = 'page-face page-back';
+  const fi = document.createElement('img'), bi = document.createElement('img');
+  makeImgStyle(fi); makeImgStyle(bi);
+
+  if (dir > 0) {
+    if (nextSp.right) { rightImg.src = imgSrc(nextSp.right); rightPanel.style.visibility = 'visible'; }
+    else              { rightImg.src = ''; rightPanel.style.visibility = 'hidden'; }
+    if (nextSp.left)  { leftImg.src  = imgSrc(nextSp.left);  leftPanel.style.visibility  = 'visible'; }
+
+    fi.src = imgSrc(curSp.right);
+    bi.src = imgSrc(nextSp.left);
+    page.style.left = 'auto'; page.style.right = '0';
+    page.style.transformOrigin = 'left center';
+  } else {
+    if (nextSp.left)  { leftImg.src  = imgSrc(nextSp.left);  leftPanel.style.visibility  = 'visible'; }
+    else              { leftImg.src  = ''; leftPanel.style.visibility  = 'hidden'; }
+    if (nextSp.right) { rightImg.src = imgSrc(nextSp.right); rightPanel.style.visibility = 'visible'; }
+
+    fi.src = imgSrc(curSp.left);
+    bi.src = imgSrc(nextSp.right);
+    page.style.left = '0'; page.style.right = 'auto';
+    page.style.transformOrigin = 'right center';
+  }
+
+  front.appendChild(fi); back.appendChild(bi);
+  page.appendChild(front); page.appendChild(back);
+  book.appendChild(page);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    page.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(180deg)';
+  }));
+
+  page.addEventListener('transitionend', () => {
+    current = next; renderSpread(current);
+    book.removeChild(page); isAnimating = false;
+  }, { once: true });
+}
+
+function goToPage(s) {
+  if (isAnimating || s === current || s < 0 || s >= TOTAL_SPREADS) return;
+  current = s; renderSpread(current);
+}
+
+function scrubTo(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  goToPage(Math.round(pct * (TOTAL_SPREADS - 1)));
+}
+
+// ─── Keyboard ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ')  turnPage(1);
+  if (e.key === 'ArrowLeft')                     turnPage(-1);
+  if (e.key === 'Home')                          goToPage(0);
+  if (e.key === 'End')                           goToPage(TOTAL_SPREADS - 1);
+});
+
+// ─── Touch / Swipe ─────────────────────────────────────────────
+let touchStartX = null, touchStartY = null;
+
+document.getElementById('stage').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.getElementById('stage').addEventListener('touchend', e => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+    dx < 0 ? turnPage(1) : turnPage(-1);
+  }
+  touchStartX = null; touchStartY = null;
+}, { passive: true });
+
+document.getElementById('left-panel').addEventListener('click',  () => turnPage(-1));
+document.getElementById('right-panel').addEventListener('click', () => turnPage(1));
+
+function openBook() { document.getElementById('cover-page').classList.add('hidden'); renderSpread(0); }
+function goHome() {
+  current = 0; renderSpread(0);
+  document.getElementById('cover-page').classList.remove('hidden');
+}
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen();
+}
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.getElementById('fs-icon-expand').style.display   = isFs ? 'none' : '';
+  document.getElementById('fs-icon-compress').style.display = isFs ? ''     : 'none';
+  setTimeout(resizeBook, 100);
+});
+
+// ─── Init: detect aspect ratio from first image, then start ────
+function detectAspectAndInit() {
+  const probe = new Image();
+  probe.onload = () => {
+    if (probe.naturalWidth && probe.naturalHeight)
+      PAGE_ASPECT = probe.naturalWidth / probe.naturalHeight;
+    resizeBook();
+    window.addEventListener('resize', resizeBook);
+    buildThumbs();
+    document.getElementById('tot-pages').textContent = TOTAL_SPREADS;
+    renderSpread(0);
+  };
+  probe.onerror = () => {
+    resizeBook();
+    window.addEventListener('resize', resizeBook);
+    buildThumbs();
+    document.getElementById('tot-pages').textContent = TOTAL_SPREADS;
+    renderSpread(0);
+  };
+  probe.src = imgSrc(1);
+}
+
+detectAspectAndInit();
+</script>
+</body>
+</html>
