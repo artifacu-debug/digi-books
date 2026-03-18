@@ -32,7 +32,6 @@
     pointer-events: none; z-index: 9998;
   }
 
-  /* ── Header ── */
   header {
     position: fixed; top: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: space-between;
@@ -54,7 +53,6 @@
   
   .page-counter span { color: var(--paper); font-weight: 600; }
 
-  /* ── Stage & Book ── */
   #stage {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
@@ -79,7 +77,6 @@
     box-shadow: 0 0 18px rgba(0,0,0,0.9);
   }
 
-  /* ── Intro Placard (Page 0) ── */
   #intro-panel {
     position: absolute; top: 0; left: 0;
     width: var(--page-w); height: var(--page-h);
@@ -98,7 +95,6 @@
     font-size: 14px; font-weight: 300; line-height: 1.8;
   }
 
-  /* ── Pages (Hardware Accelerated) ── */
   .page {
     position: absolute; top: 0;
     width: var(--page-w); height: var(--page-h);
@@ -127,7 +123,6 @@
     image-rendering: -webkit-optimize-contrast;
   }
 
-  /* ── Crease Shadows ── */
   .page-face::after, .under-page::after, #left-panel::after, #right-panel::after { 
     content: ''; position: absolute; inset: 0; pointer-events: none; 
   }
@@ -148,7 +143,6 @@
   .under-page { z-index: 5; }
   .under-page img, #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
 
-  /* ── Controls ── */
   #controls {
     position: fixed; bottom: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: center;
@@ -170,14 +164,21 @@
     position: relative; width: 280px; height: 1px;
     background: rgba(255,255,255,0.15); cursor: pointer;
   }
-  #progress-fill { height: 100%; background: var(--paper); transition: width 0.4s ease; }
-  #progress-thumb {
+  
+  .track-dot {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); 
+    pointer-events: none; z-index: 1;
+  }
+
+  #progress-fill { position: relative; z-index: 2; height: 100%; background: var(--paper); transition: width 0.4s ease; pointer-events: none; }
+  #progress-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%); z-index: 3;
     width: 8px; height: 8px; background: var(--paper);
     border-radius: 50%; transition: left 0.4s ease; pointer-events: none;
   }
 
-  /* ── Loading Screen ── */
   #cover-page {
     position: absolute; inset: 0; background: var(--ink);
     display: flex; align-items: center; justify-content: center;
@@ -198,7 +199,6 @@
 
   @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-  /* ── Thumbnails ── */
   #thumb-strip {
     position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
     display: flex; flex-direction: column; gap: 4px;
@@ -208,7 +208,6 @@
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   
-  /* ── Header Icons ── */
   .home-btn, .fs-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; background: transparent; border: 1px solid rgba(255,255,255,0.2);
@@ -418,6 +417,16 @@ function buildThumbs() {
   }
 }
 
+function buildTrackDots() {
+  const track = document.getElementById('progress-track');
+  for (let s = 0; s < TOTAL_SPREADS; s++) {
+    const dot = document.createElement('div');
+    dot.className = 'track-dot';
+    dot.style.left = (s / (TOTAL_SPREADS - 1)) * 100 + '%';
+    track.appendChild(dot);
+  }
+}
+
 let touchStartX = null, touchStartY = null;
 document.getElementById('stage').addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
@@ -468,6 +477,7 @@ function init() {
   resizeBook(); 
   window.addEventListener('resize', resizeBook); 
   buildThumbs(); 
+  buildTrackDots();
   document.getElementById('tot-pages').textContent = TOTAL_IMAGES; 
   renderSpread(0); 
 }
