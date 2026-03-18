@@ -14,7 +14,7 @@
     --mid: #777;
     --page-w: 640px;
     --page-h: 461px;
-    --book-x: 0px; /* New variable to control the camera slide */
+    --book-x: 0px; 
   }
 
   html, body {
@@ -60,7 +60,6 @@
     perspective: 2200px;
   }
 
-  /* ── The Book Frame (Now Slides smoothly left & right) ── */
   #book {
     position: relative;
     width: calc(var(--page-w) * 2);
@@ -97,6 +96,24 @@
   }
   #intro-panel p {
     font-size: 14px; font-weight: 300; line-height: 1.8;
+  }
+  
+  .nav-hint {
+    margin-top: 40px;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--mid);
+  }
+  .hint-arrow {
+    display: inline-block;
+    font-size: 18px;
+    margin-top: 8px;
+    animation: pointRight 1.5s infinite ease-in-out;
+  }
+  @keyframes pointRight {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(8px); }
   }
 
   .page {
@@ -219,21 +236,8 @@
   }
   .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); border-color: rgba(255,255,255,0.5); }
 
-  #rotate-msg {
-    display: none;
-    position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
-    color: #999; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
-    padding: 8px 20px; z-index: 95; pointer-events: none; text-align: center; width: max-content;
-  }
-
-  @media (max-width: 800px) and (orientation: portrait) {
-    #rotate-msg { display: block; }
-  }
-
   @media (max-width: 800px) {
-    #thumb-strip, #intro-panel { display: none !important; }
+    #thumb-strip { display: none !important; }
     header { padding: 15px 20px; justify-content: space-between; }
     .page-counter { position: absolute; top: 60px; left: 0; width: 100%; text-align: center; }
     #controls { padding: 10px 15px 25px; gap: 10px; }
@@ -273,7 +277,6 @@
     </button>
   </div>
 </header>
-<div id="rotate-msg">Rotate device horizontally for two-page spread</div>
 
 <div id="thumb-strip"></div>
 
@@ -284,6 +287,10 @@
       <h2>Insectes, c. 1925</h2>
       <div class="divider"></div>
       <p>A companion to <em>Papillons</em>, this portfolio takes insects as its subject. While the precise renderings provided detailed information, Séguy also hoped that artists and designers would be inspired by the abstracted patterns he based off of the scientific illustrations.</p>
+      <div class="nav-hint">
+        Swipe or use arrows below to navigate <br>
+        <span class="hint-arrow">→</span>
+      </div>
     </div>
     <div id="left-panel"><img id="left-img" src="" alt=""></div>
     <div id="right-panel"><img id="right-img" src="" alt=""></div>
@@ -308,7 +315,7 @@ const IMG_DIR = 'pages/';
 const IMG_EXT = '.webp'; 
 
 let current = 0, isAnimating = false, PAGE_ASPECT = 680 / 490;
-let mobileSide = 'left'; // Tracks which page the camera is centered on in mobile view
+let mobileSide = 'left'; 
 const loadedImages = new Set(); 
 
 const book = document.getElementById('book'), 
@@ -343,36 +350,30 @@ function manageAssets(s) {
   });
 }
 
-// ─── The Camera Slider System ───
 function applyBookTransform() {
   const isMobile = window.innerWidth <= 800;
   const pageW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--page-w'));
   
   let tx = 0;
   if (isMobile) {
-    // If mobile, slide the book opposite the desired page to center it on the screen
     tx = mobileSide === 'left' ? (pageW / 2) : -(pageW / 2);
   }
   document.documentElement.style.setProperty('--book-x', tx + 'px');
   updateNavButtons();
 }
 
-// ─── Mobile Two-Tap Navigation Logic ───
 function navNext() {
   if (isAnimating) return;
   const sp = getSpread(current);
   const isMobile = window.innerWidth <= 800;
 
   if (isMobile && mobileSide === 'left') {
-    // We are on mobile and looking at the left page. 
-    // Just slide the camera right, unless there is no right page (the back cover)
     if (sp.right === null) return; 
     mobileSide = 'right';
     applyBookTransform();
   } else {
-    // We are at the right edge of the spread. Time to do the 3D flip.
     if (current + 1 >= TOTAL_SPREADS) return;
-    mobileSide = 'left'; // Center the camera on the incoming left page
+    mobileSide = 'left'; 
     applyBookTransform();
     turnPage(1);
   }
@@ -384,14 +385,12 @@ function navPrev() {
   const isMobile = window.innerWidth <= 800;
 
   if (isMobile && mobileSide === 'right') {
-    // Just slide the camera left. Note: Spread 0 left is null but holds the intro panel, so we allow it.
     if (sp.left === null && current !== 0) return; 
     mobileSide = 'left';
     applyBookTransform();
   } else {
-    // We are at the left edge of the spread. Time to 3D flip backward.
     if (current - 1 < 0) return;
-    mobileSide = 'right'; // Center the camera on the incoming right page
+    mobileSide = 'right'; 
     applyBookTransform();
     turnPage(-1);
   }
@@ -404,7 +403,6 @@ function updateNavButtons() {
   document.getElementById('btn-first').disabled = current === 0 && (!isMobile || mobileSide === 'left');
   document.getElementById('btn-prev').disabled  = current === 0 && (!isMobile || mobileSide === 'left');
   
-  // Disable next if we are on the absolute last viewable page
   document.getElementById('btn-next').disabled  = (current >= TOTAL_SPREADS - 1) && (!isMobile || mobileSide === 'right' || sp.right === null);
   document.getElementById('btn-last').disabled  = current >= TOTAL_SPREADS - 1;
 }
@@ -488,7 +486,6 @@ function resizeBook() {
   let pageW, pageH;
 
   if (isMobile) {
-    // If mobile, one page can fill almost the entire screen width
     const availW = window.innerWidth - 20; 
     const availH = window.innerHeight - 160; 
     pageW = Math.min(1360, availW); 
@@ -499,7 +496,6 @@ function resizeBook() {
       pageW = Math.round(pageH * PAGE_ASPECT); 
     }
   } else {
-    // If desktop, calculate space for two pages side-by-side
     const availW = window.innerWidth - 140; 
     const availH = window.innerHeight - 170; 
     pageW = Math.floor(availW / 2); 
@@ -510,7 +506,6 @@ function resizeBook() {
       pageW = Math.round(pageH * PAGE_ASPECT); 
     }
     
-    // Desktop Max size limit so we don't pixelate the WebP files
     if (pageW > 1360) {
       pageW = 1360;
       pageH = Math.round(pageW / PAGE_ASPECT);
@@ -527,7 +522,7 @@ function goHome() { location.href = '../index.html'; }
 function goToPage(s) { 
   if (!isAnimating && s !== current) { 
     current = s; 
-    mobileSide = 'left'; // Always jump to the left side of a new spread
+    mobileSide = 'left'; 
     renderSpread(s); 
   } 
 }
@@ -553,7 +548,6 @@ function buildTrackDots() {
   }
 }
 
-// ─── Re-routed controls to the new navNext and navPrev functions ───
 let touchStartX = null, touchStartY = null;
 document.getElementById('stage').addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
