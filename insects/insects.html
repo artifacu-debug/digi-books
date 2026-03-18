@@ -226,32 +226,55 @@
   <button class="nav-btn" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
 </div>
 
-<script>
 // ─── Config ────────────────────────────────────────────────────
 const TOTAL_IMAGES  = 24;
-const TOTAL_SPREADS = TOTAL_IMAGES / 2 + 1;
+const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
 const IMG_DIR = 'pages/';
 const IMG_EXT = '.jpg';
 
 // ─── State ─────────────────────────────────────────────────────
 let current = 0, isAnimating = false;
 let PAGE_ASPECT = 680 / 490;
+const loadedImages = new Set(); // Track what we've already fetched
 
 // ─── Element refs ──────────────────────────────────────────────
-const book = document.getElementById('book'), leftPanel = document.getElementById('left-panel'), rightPanel = document.getElementById('right-panel'), leftImg = document.getElementById('left-img'), rightImg = document.getElementById('right-img'), curEl = document.getElementById('cur-page'), fillEl = document.getElementById('progress-fill'), thumbEl = document.getElementById('progress-thumb'), thumbStrip = document.getElementById('thumb-strip');
+const book = document.getElementById('book'), 
+      leftImg = document.getElementById('left-img'), 
+      rightImg = document.getElementById('right-img'),
+      curEl = document.getElementById('cur-page'), 
+      fillEl = document.getElementById('progress-fill'), 
+      thumbEl = document.getElementById('progress-thumb'), 
+      thumbStrip = document.getElementById('thumb-strip');
 
 function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
 
-// ─── NEW: Smart Preloader ──────────────────────────────────────
-function preloadSurrounding(s) {
-  const spreadsToLoad = [s + 1, s - 1, s + 2]; // Preload next two and previous
-  spreadsToLoad.forEach(idx => {
-    if (idx >= 0 && idx < TOTAL_SPREADS) {
-      const sp = getSpread(idx);
-      if (sp.left) { const i = new Image(); i.src = imgSrc(sp.left); }
-      if (sp.right) { const i = new Image(); i.src = imgSrc(sp.right); }
-    }
-  });
+// ─── NEW: Lazy Load & Preload Engine ───────────────────────────
+function smartLoad(n) {
+  if (!n || loadedImages.has(n)) return;
+  const img = new Image();
+  img.src = imgSrc(n);
+  loadedImages.add(n);
+  console.log(`Lazy Loading: Page ${n}`);
+}
+
+function manageAssets(s) {
+  const currentSp = getSpread(s);
+  const nextSp    = (s + 1 < TOTAL_SPREADS) ? getSpread(s + 1) : null;
+  const prevSp    = (s - 1 >= 0) ? getSpread(s - 1) : null;
+
+  // 1. Prioritize current spread
+  if (currentSp.left)  smartLoad(currentSp.left);
+  if (currentSp.right) smartLoad(currentSp.right);
+
+  // 2. Silently fetch adjacent pages in background
+  if (nextSp) {
+    if (nextSp.left)  smartLoad(nextSp.left);
+    if (nextSp.right) smartLoad(nextSp.right);
+  }
+  if (prevSp) {
+    if (prevSp.left)  smartLoad(prevSp.left);
+    if (prevSp.right) smartLoad(prevSp.right);
+  }
 }
 
 function getSpread(s) {
@@ -262,19 +285,27 @@ function getSpread(s) {
 
 function renderSpread(s) {
   const sp = getSpread(s);
-  leftImg.src = imgSrc(sp.left); 
-  leftPanel.style.visibility = sp.left ? 'visible' : 'hidden';
-  rightImg.src = imgSrc(sp.right); 
-  rightPanel.style.visibility = sp.right ? 'visible' : 'hidden';
+  
+  // Set sources immediately (Browser handles the actual fetch)
+  if (sp.left)  { leftImg.src = imgSrc(sp.left);  document.getElementById('left-panel').style.visibility = 'visible'; }
+  else          { leftImg.src = '';               document.getElementById('left-panel').style.visibility = 'hidden'; }
+  
+  if (sp.right) { rightImg.src = imgSrc(sp.right); document.getElementById('right-panel').style.visibility = 'visible'; }
+  else          { rightImg.src = '';               document.getElementById('right-panel').style.visibility = 'hidden'; }
 
   curEl.textContent = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back' : `${sp.left}–${sp.right}`;
+  
   const pct = (s / (TOTAL_SPREADS - 1)) * 100;
-  fillEl.style.width = pct + '%'; thumbEl.style.left = pct + '%';
+  fillEl.style.width = pct + '%'; 
+  thumbEl.style.left = pct + '%';
 
   document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
-  preloadSurrounding(s); // Run preloader
+  
+  // Trigger the smart asset manager
+  manageAssets(s);
 }
 
+// ─── Optimized Page Turn (Uses cached images) ──────────────────
 function turnPage(dir) {
   if (isAnimating) return;
   const next = current + dir;
@@ -284,18 +315,21 @@ function turnPage(dir) {
   const curSp = getSpread(current), nextSp = getSpread(next);
   const page = document.createElement('div');
   page.className = 'page';
+  
   const front = document.createElement('div'); front.className = 'page-face page-front';
-  const back = document.createElement('div'); back.className = 'page-face page-back';
+  const back = document.createElement('div');  back.className  = 'page-face page-back';
   const fi = document.createElement('img'), bi = document.createElement('img');
 
   if (dir > 0) {
-    if (nextSp.right) { rightImg.src = imgSrc(nextSp.right); rightPanel.style.visibility = 'visible'; }
-    fi.src = imgSrc(curSp.right); bi.src = imgSrc(nextSp.left);
-    page.style.right = '0'; page.style.transformOrigin = 'left center';
+    fi.src = imgSrc(curSp.right);
+    bi.src = imgSrc(nextSp.left);
+    page.style.right = '0'; 
+    page.style.transformOrigin = 'left center';
   } else {
-    if (nextSp.left) { leftImg.src = imgSrc(nextSp.left); leftPanel.style.visibility = 'visible'; }
-    fi.src = imgSrc(curSp.left); bi.src = imgSrc(nextSp.right);
-    page.style.left = '0'; page.style.transformOrigin = 'right center';
+    fi.src = imgSrc(curSp.left);
+    bi.src = imgSrc(nextSp.right);
+    page.style.left = '0'; 
+    page.style.transformOrigin = 'right center';
   }
 
   front.appendChild(fi); back.appendChild(bi);
@@ -309,11 +343,14 @@ function turnPage(dir) {
   });
 
   page.addEventListener('transitionend', () => {
-    current = next; renderSpread(current);
-    book.removeChild(page); isAnimating = false;
+    current = next; 
+    renderSpread(current);
+    book.removeChild(page); 
+    isAnimating = false;
   }, { once: true });
 }
 
+// ─── Standard Functions (Resize, Fullscreen, etc.) ─────────────
 function resizeBook() {
   const availW = window.innerWidth - 140, availH = window.innerHeight - 170;
   let pageW = Math.min(680, Math.floor(availW / 2)), pageH = Math.round(pageW / PAGE_ASPECT);
@@ -323,15 +360,18 @@ function resizeBook() {
 }
 
 function openBook() { document.getElementById('cover-page').classList.add('hidden'); renderSpread(0); }
-function goHome() { current = 0; renderSpread(0); document.getElementById('cover-page').classList.remove('hidden'); }
+function goHome() { location.href = '../index.html'; } // Pointing back to shelf
 function goToPage(s) { if (!isAnimating && s !== current) { current = s; renderSpread(s); } }
 function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth)); goToPage(Math.round(pct * (TOTAL_SPREADS - 1))); }
 
 function buildThumbs() {
   for (let s = 0; s < TOTAL_SPREADS; s++) {
     const sp = getSpread(s), d = document.createElement('div');
-    d.className = 'thumb'; d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}">`;
-    d.onclick = () => goToPage(s); thumbStrip.appendChild(d);
+    d.className = 'thumb'; 
+    // Thumbs use the same lazy logic - browser loads them as they appear in view
+    d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
+    d.onclick = () => goToPage(s); 
+    thumbStrip.appendChild(d);
   }
 }
 
@@ -343,15 +383,17 @@ function detectAspectAndInit() {
 }
 
 function init() {
-  resizeBook(); window.addEventListener('resize', resizeBook);
-  buildThumbs(); document.getElementById('tot-pages').textContent = TOTAL_SPREADS;
+  resizeBook(); 
+  window.addEventListener('resize', resizeBook);
+  buildThumbs(); 
+  document.getElementById('tot-pages').textContent = TOTAL_SPREADS;
   renderSpread(0);
 }
 
 detectAspectAndInit();
 
 function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => console.error(e));
   else document.exitFullscreen();
 }
 </script>
