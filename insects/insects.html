@@ -214,6 +214,29 @@
     color: var(--mid); cursor: pointer; transition: all 0.2s ease;
   }
   .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); border-color: rgba(255,255,255,0.5); }
+
+  #rotate-msg {
+    display: none;
+    position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
+    color: #999; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 8px 20px; z-index: 95; pointer-events: none; text-align: center; width: max-content;
+  }
+
+  @media (max-width: 800px) and (orientation: portrait) {
+    #rotate-msg { display: block; }
+  }
+
+  @media (max-width: 800px) {
+    #thumb-strip, #intro-panel { display: none !important; }
+    header { padding: 15px 20px; justify-content: space-between; }
+    .page-counter { position: absolute; top: 60px; left: 0; width: 100%; text-align: center; }
+    #controls { padding: 10px 15px 25px; gap: 10px; }
+    .nav-btn { width: 34px; height: 34px; font-size: 14px; }
+    #progress-track { width: 100px; }
+    .cover-title { font-size: 32px; }
+  }
 </style>
 </head>
 <body>
@@ -246,6 +269,7 @@
     </button>
   </div>
 </header>
+<div id="rotate-msg">Rotate device horizontally for optimal viewing</div>
 
 <div id="thumb-strip"></div>
 
@@ -396,9 +420,24 @@ function turnPage(dir) {
 }
 
 function resizeBook() {
-  const availW = window.innerWidth - 140, availH = window.innerHeight - 170;
-  let pageW = Math.min(680, Math.floor(availW / 2)), pageH = Math.round(pageW / PAGE_ASPECT);
-  if (pageH > availH) { pageH = Math.min(490, availH); pageW = Math.round(pageH * PAGE_ASPECT); }
+  const isMobile = window.innerWidth <= 800;
+  
+  const availW = isMobile ? window.innerWidth - 20 : window.innerWidth - 140; 
+  const availH = isMobile ? window.innerHeight - 160 : window.innerHeight - 170; 
+  
+  let pageW = Math.floor(availW / 2); 
+  let pageH = Math.round(pageW / PAGE_ASPECT);
+  
+  if (pageH > availH) { 
+    pageH = availH; 
+    pageW = Math.round(pageH * PAGE_ASPECT); 
+  }
+  
+  if (pageW > 1360) {
+    pageW = 1360;
+    pageH = Math.round(pageW / PAGE_ASPECT);
+  }
+
   document.documentElement.style.setProperty('--page-w', pageW + 'px'); 
   document.documentElement.style.setProperty('--page-h', pageH + 'px');
 }
