@@ -79,6 +79,25 @@
     box-shadow: 0 0 18px rgba(0,0,0,0.9);
   }
 
+  /* ── Intro Placard (Page 0) ── */
+  #intro-panel {
+    position: absolute; top: 0; left: 0;
+    width: var(--page-w); height: var(--page-h);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 12% 0 8%;
+    color: var(--mid);
+    opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+  }
+  #intro-panel h2 {
+    color: var(--paper); font-size: 22px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  #intro-panel .divider {
+    width: 40px; height: 1px; background: rgba(255,255,255,0.2); margin: 20px 0;
+  }
+  #intro-panel p {
+    font-size: 14px; font-weight: 300; line-height: 1.8;
+  }
+
   /* ── Pages (Hardware Accelerated) ── */
   .page {
     position: absolute; top: 0;
@@ -192,11 +211,18 @@
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   
+  /* ── Header Icons ── */
   .home-btn, .fs-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; 
     background: transparent; border: 1px solid rgba(255,255,255,0.2);
-    color: var(--mid); cursor: pointer; padding: 6px 14px; font-size: 10px; text-transform: uppercase;
+    color: var(--mid); cursor: pointer; transition: all 0.2s ease;
   }
-  .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); }
+  .home-btn:hover, .fs-btn:hover { 
+    background: rgba(255,255,255,0.1); 
+    color: var(--paper); 
+    border-color: rgba(255,255,255,0.5); 
+  }
 </style>
 </head>
 <body>
@@ -215,8 +241,20 @@
   <div class="wordmark">Wolfsonian</div>
   <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">24</span></div>
   <div style="display:flex;align-items:center;gap:10px;">
-    <button class="fs-btn" onclick="toggleFullscreen()">FS</button>
-    <button class="home-btn" onclick="goHome()">Home</button>
+    <button class="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+      <svg id="fs-expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+      <svg id="fs-compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+    </button>
+    <button class="home-btn" onclick="goHome()" title="Back to Library">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -225,6 +263,16 @@
 <div id="stage">
   <div id="book">
     <div id="spine"></div>
+    <div id="intro-panel">
+      <h2>Insectes, c. 1925</h2>
+      <div class="divider"></div>
+      <p>
+        A companion to <em>Papillons</em>, this portfolio takes insects as its subject. 
+        While the precise renderings provided detailed information, Séguy also hoped 
+        that artists and designers would be inspired by the abstracted patterns 
+        he based off of the scientific illustrations.
+      </p>
+    </div>
     <div id="left-panel"><img id="left-img" src="" alt=""></div>
     <div id="right-panel"><img id="right-img" src="" alt=""></div>
   </div>
@@ -260,7 +308,8 @@ const book = document.getElementById('book'),
       curEl = document.getElementById('cur-page'), 
       fillEl = document.getElementById('progress-fill'), 
       thumbEl = document.getElementById('progress-thumb'), 
-      thumbStrip = document.getElementById('thumb-strip');
+      thumbStrip = document.getElementById('thumb-strip'),
+      introPanel = document.getElementById('intro-panel');
 
 function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
 
@@ -310,6 +359,9 @@ function renderSpread(s) {
   const pct = (s / (TOTAL_SPREADS - 1)) * 100;
   fillEl.style.width = pct + '%'; 
   thumbEl.style.left = pct + '%';
+
+  // Toggle the new intro text visibility
+  introPanel.style.opacity = (s === 0) ? '1' : '0';
 
   document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
   
@@ -382,6 +434,19 @@ function buildThumbs() {
   }
 }
 
+// ─── Fullscreen Event Listener ─────────────────────────────────
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.getElementById('fs-expand').style.display = isFs ? 'none' : 'block';
+  document.getElementById('fs-compress').style.display = isFs ? 'block' : 'none';
+  setTimeout(resizeBook, 100);
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => console.error(e));
+  else document.exitFullscreen();
+}
+
 // ─── Initialization & Loading Screen ───────────────────────────
 function detectAspectAndInit() {
   let loadedCount = 0;
@@ -415,11 +480,6 @@ function init() {
 }
 
 detectAspectAndInit();
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => console.error(e));
-  else document.exitFullscreen();
-}
 </script>
 </body>
 </html>
