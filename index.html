@@ -33,7 +33,7 @@
   /* ── TIGHTENED HEADER ── */
   header {
     max-width: 900px;
-    margin: 40px auto 30px; /* Shrunk the 80px top and 60px bottom margins */
+    margin: 40px auto 30px;
     padding: 0 40px;
     text-align: center;
   }
@@ -41,20 +41,20 @@
   .wordmark {
     font-weight: 600; font-size: 13px;
     letter-spacing: 0.3em; text-transform: uppercase;
-    color: var(--mid); margin-bottom: 12px; /* Halved this gap */
+    color: var(--mid); margin-bottom: 12px;
     display: block;
   }
 
   h1 {
-    font-size: clamp(28px, 4vw, 42px); /* Slightly refined scale */
+    font-size: clamp(28px, 4vw, 42px);
     font-weight: 300; letter-spacing: 0.05em;
-    margin-bottom: 16px; /* Halved this gap */
+    margin-bottom: 16px;
     text-transform: uppercase;
   }
 
   .intro-text {
     font-size: 15px; font-weight: 300;
-    color: var(--mid); max-width: 750px; /* Widened to reduce line breaks */
+    color: var(--mid); max-width: 750px;
     margin: 0 auto; letter-spacing: 0.02em;
   }
 
@@ -114,10 +114,11 @@
     margin-bottom: 18px; text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--paper);
+    line-height: 1.3;
   }
 
   .book-overlay p {
-    font-size: 12.5px; font-weight: 300;
+    font-size: 12px; font-weight: 300;
     color: #999; line-height: 1.7;
     margin-bottom: 28px;
     max-width: 260px;
@@ -155,7 +156,6 @@
   <p class="intro-text">
     Welcome to the DigiBooks Library, a repository of historical publications and portfolios at The Wolfsonian–FIU. 
     Tap or click a book to see its description, then tap or click again to open it. 
-    Swipe or click to turn the pages.
   </p>
 </header>
 
@@ -179,9 +179,20 @@
     <div class="book-overlay">
       <h2>Papillons, c. 1925</h2>
       <p>
-        Intending to inspire modern artists and designers, Emile-Allain Séguy juxtaposed scientifically precise renderings of butterflies and abstracted patterns based on their forms. As with the companion portfolio Insectes, Séguy described butterflies as <em>merveilleuses mécaniques</em> [marvelous mechanisms] worthy of the same admiration as a locomotive, ocean liner, or airplane.
+        Intending to inspire modern artists and designers, Emile-Allain Séguy juxtaposed scientifically precise renderings of butterflies and abstracted patterns based on their forms. As with the companion portfolio Insectes, Séguy described butterflies as <em>merveilleuses mécaniques</em> worthy of the same admiration as a locomotive or airplane.
       </p>
       <button class="btn-open" onclick="location.href='papillons/papillons.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" onclick="this.classList.toggle('active')">
+    <img src="larchitecture/pages/1.webp" alt="L'architecture, 1925" class="book-cover">
+    <div class="book-overlay">
+      <h2>L'architecture, 1925</h2>
+      <p>
+        This portfolio includes plates that highlight the architecture on display at the 1925 Paris Exposition, including a modern village, regionalist constructions, and other pavilions.
+      </p>
+      <button class="btn-open" onclick="location.href='larchitecture/larchitecture.html'">Open Book</button>
     </div>
   </div>
 
