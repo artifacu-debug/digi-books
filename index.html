@@ -30,29 +30,31 @@
     z-index: -1;
   }
 
+  /* ── TIGHTENED HEADER ── */
   header {
     max-width: 900px;
-    margin: 80px auto 60px;
+    margin: 40px auto 30px; /* Shrunk the 80px top and 60px bottom margins */
     padding: 0 40px;
     text-align: center;
   }
 
   .wordmark {
-    font-weight: 600; font-size: 14px;
+    font-weight: 600; font-size: 13px;
     letter-spacing: 0.3em; text-transform: uppercase;
-    color: var(--mid); margin-bottom: 24px;
+    color: var(--mid); margin-bottom: 12px; /* Halved this gap */
     display: block;
   }
 
   h1 {
-    font-size: clamp(32px, 5vw, 52px);
+    font-size: clamp(28px, 4vw, 42px); /* Slightly refined scale */
     font-weight: 300; letter-spacing: 0.05em;
-    margin-bottom: 32px; text-transform: uppercase;
+    margin-bottom: 16px; /* Halved this gap */
+    text-transform: uppercase;
   }
 
   .intro-text {
-    font-size: 16px; font-weight: 300;
-    color: var(--mid); max-width: 650px;
+    font-size: 15px; font-weight: 300;
+    color: var(--mid); max-width: 750px; /* Widened to reduce line breaks */
     margin: 0 auto; letter-spacing: 0.02em;
   }
 
@@ -139,8 +141,8 @@
   }
 
   @media (max-width: 600px) {
-    header { margin-top: 50px; padding: 0 24px; }
-    h1 { font-size: 30px; }
+    header { margin-top: 30px; padding: 0 24px; }
+    h1 { font-size: 26px; }
     .shelf-container { grid-template-columns: 1fr; padding: 0 30px; }
   }
 </style>
