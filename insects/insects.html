@@ -14,6 +14,7 @@
     --mid: #777;
     --page-w: 640px;
     --page-h: 461px;
+    --book-x: 0px; /* New variable to control the camera slide */
   }
 
   html, body {
@@ -59,6 +60,7 @@
     perspective: 2200px;
   }
 
+  /* ── The Book Frame (Now Slides smoothly left & right) ── */
   #book {
     position: relative;
     width: calc(var(--page-w) * 2);
@@ -66,6 +68,8 @@
     transform-style: preserve-3d;
     filter: drop-shadow(0 20px 50px rgba(0,0,0,0.85));
     flex-shrink: 0;
+    transform: translateX(var(--book-x));
+    transition: transform 0.72s cubic-bezier(0.645, 0.045, 0.355, 1.000);
   }
 
   #spine {
@@ -157,7 +161,7 @@
     background: transparent; color: var(--paper);
     cursor: pointer; transition: all 0.2s; font-size: 16px;
   }
-  .nav-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+  .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
   .nav-btn:disabled { opacity: 0.15; cursor: default; }
 
   #progress-track {
@@ -269,7 +273,7 @@
     </button>
   </div>
 </header>
-<div id="rotate-msg">Rotate device horizontally for optimal viewing</div>
+<div id="rotate-msg">Rotate device horizontally for two-page spread</div>
 
 <div id="thumb-strip"></div>
 
@@ -288,12 +292,12 @@
 
 <div id="controls">
   <button class="nav-btn" id="btn-first" onclick="goToPage(0)">&#10073;&#9664;</button>
-  <button class="nav-btn" id="btn-prev" onclick="turnPage(-1)">&#9664;</button>
+  <button class="nav-btn" id="btn-prev" onclick="navPrev()">&#9664;</button>
   <div id="progress-track" onclick="scrubTo(event)">
     <div id="progress-fill"></div>
     <div id="progress-thumb"></div>
   </div>
-  <button class="nav-btn" id="btn-next" onclick="turnPage(1)">&#9654;</button>
+  <button class="nav-btn" id="btn-next" onclick="navNext()">&#9654;</button>
   <button class="nav-btn" id="btn-last" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
 </div>
 
@@ -304,6 +308,7 @@ const IMG_DIR = 'pages/';
 const IMG_EXT = '.webp'; 
 
 let current = 0, isAnimating = false, PAGE_ASPECT = 680 / 490;
+let mobileSide = 'left'; // Tracks which page the camera is centered on in mobile view
 const loadedImages = new Set(); 
 
 const book = document.getElementById('book'), 
@@ -338,6 +343,72 @@ function manageAssets(s) {
   });
 }
 
+// ─── The Camera Slider System ───
+function applyBookTransform() {
+  const isMobile = window.innerWidth <= 800;
+  const pageW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--page-w'));
+  
+  let tx = 0;
+  if (isMobile) {
+    // If mobile, slide the book opposite the desired page to center it on the screen
+    tx = mobileSide === 'left' ? (pageW / 2) : -(pageW / 2);
+  }
+  document.documentElement.style.setProperty('--book-x', tx + 'px');
+  updateNavButtons();
+}
+
+// ─── Mobile Two-Tap Navigation Logic ───
+function navNext() {
+  if (isAnimating) return;
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+
+  if (isMobile && mobileSide === 'left') {
+    // We are on mobile and looking at the left page. 
+    // Just slide the camera right, unless there is no right page (the back cover)
+    if (sp.right === null) return; 
+    mobileSide = 'right';
+    applyBookTransform();
+  } else {
+    // We are at the right edge of the spread. Time to do the 3D flip.
+    if (current + 1 >= TOTAL_SPREADS) return;
+    mobileSide = 'left'; // Center the camera on the incoming left page
+    applyBookTransform();
+    turnPage(1);
+  }
+}
+
+function navPrev() {
+  if (isAnimating) return;
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+
+  if (isMobile && mobileSide === 'right') {
+    // Just slide the camera left. Note: Spread 0 left is null but holds the intro panel, so we allow it.
+    if (sp.left === null && current !== 0) return; 
+    mobileSide = 'left';
+    applyBookTransform();
+  } else {
+    // We are at the left edge of the spread. Time to 3D flip backward.
+    if (current - 1 < 0) return;
+    mobileSide = 'right'; // Center the camera on the incoming right page
+    applyBookTransform();
+    turnPage(-1);
+  }
+}
+
+function updateNavButtons() {
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+  
+  document.getElementById('btn-first').disabled = current === 0 && (!isMobile || mobileSide === 'left');
+  document.getElementById('btn-prev').disabled  = current === 0 && (!isMobile || mobileSide === 'left');
+  
+  // Disable next if we are on the absolute last viewable page
+  document.getElementById('btn-next').disabled  = (current >= TOTAL_SPREADS - 1) && (!isMobile || mobileSide === 'right' || sp.right === null);
+  document.getElementById('btn-last').disabled  = current >= TOTAL_SPREADS - 1;
+}
+
 function renderSpread(s) {
   const sp = getSpread(s);
   
@@ -365,20 +436,13 @@ function renderSpread(s) {
 
   document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
   
-  document.getElementById('btn-first').disabled = s === 0;
-  document.getElementById('btn-prev').disabled  = s === 0;
-  document.getElementById('btn-next').disabled  = s >= TOTAL_SPREADS - 1;
-  document.getElementById('btn-last').disabled  = s >= TOTAL_SPREADS - 1;
-
   manageAssets(s);
+  applyBookTransform();
 }
 
 function turnPage(dir) {
-  if (isAnimating) return;
-  const next = current + dir; 
-  if (next < 0 || next >= TOTAL_SPREADS) return;
   isAnimating = true;
-
+  const next = current + dir; 
   const curSp = getSpread(current), nextSp = getSpread(next);
   const page = document.createElement('div'); 
   page.className = 'page'; page.style.zIndex = '10'; 
@@ -421,29 +485,52 @@ function turnPage(dir) {
 
 function resizeBook() {
   const isMobile = window.innerWidth <= 800;
-  
-  const availW = isMobile ? window.innerWidth - 20 : window.innerWidth - 140; 
-  const availH = isMobile ? window.innerHeight - 160 : window.innerHeight - 170; 
-  
-  let pageW = Math.floor(availW / 2); 
-  let pageH = Math.round(pageW / PAGE_ASPECT);
-  
-  if (pageH > availH) { 
-    pageH = availH; 
-    pageW = Math.round(pageH * PAGE_ASPECT); 
-  }
-  
-  if (pageW > 1360) {
-    pageW = 1360;
+  let pageW, pageH;
+
+  if (isMobile) {
+    // If mobile, one page can fill almost the entire screen width
+    const availW = window.innerWidth - 20; 
+    const availH = window.innerHeight - 160; 
+    pageW = Math.min(1360, availW); 
     pageH = Math.round(pageW / PAGE_ASPECT);
+    
+    if (pageH > availH) { 
+      pageH = availH; 
+      pageW = Math.round(pageH * PAGE_ASPECT); 
+    }
+  } else {
+    // If desktop, calculate space for two pages side-by-side
+    const availW = window.innerWidth - 140; 
+    const availH = window.innerHeight - 170; 
+    pageW = Math.floor(availW / 2); 
+    pageH = Math.round(pageW / PAGE_ASPECT);
+    
+    if (pageH > availH) { 
+      pageH = availH; 
+      pageW = Math.round(pageH * PAGE_ASPECT); 
+    }
+    
+    // Desktop Max size limit so we don't pixelate the WebP files
+    if (pageW > 1360) {
+      pageW = 1360;
+      pageH = Math.round(pageW / PAGE_ASPECT);
+    }
   }
 
   document.documentElement.style.setProperty('--page-w', pageW + 'px'); 
   document.documentElement.style.setProperty('--page-h', pageH + 'px');
+  
+  applyBookTransform();
 }
 
 function goHome() { location.href = '../index.html'; } 
-function goToPage(s) { if (!isAnimating && s !== current) { current = s; renderSpread(s); } }
+function goToPage(s) { 
+  if (!isAnimating && s !== current) { 
+    current = s; 
+    mobileSide = 'left'; // Always jump to the left side of a new spread
+    renderSpread(s); 
+  } 
+}
 function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth)); goToPage(Math.round(pct * (TOTAL_SPREADS - 1))); }
 
 function buildThumbs() {
@@ -466,6 +553,7 @@ function buildTrackDots() {
   }
 }
 
+// ─── Re-routed controls to the new navNext and navPrev functions ───
 let touchStartX = null, touchStartY = null;
 document.getElementById('stage').addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
@@ -473,14 +561,14 @@ document.getElementById('stage').addEventListener('touchstart', e => {
 document.getElementById('stage').addEventListener('touchend', e => {
   if (touchStartX === null) return;
   const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? turnPage(1) : turnPage(-1); }
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? navNext() : navPrev(); }
   touchStartX = null; touchStartY = null;
 }, { passive: true });
-document.getElementById('left-panel').addEventListener('click',  () => turnPage(-1));
-document.getElementById('right-panel').addEventListener('click', () => turnPage(1));
+document.getElementById('left-panel').addEventListener('click',  () => navPrev());
+document.getElementById('right-panel').addEventListener('click', () => navNext());
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === ' ') turnPage(1);
-  if (e.key === 'ArrowLeft') turnPage(-1);
+  if (e.key === 'ArrowRight' || e.key === ' ') navNext();
+  if (e.key === 'ArrowLeft') navPrev();
 });
 
 document.addEventListener('fullscreenchange', () => {
