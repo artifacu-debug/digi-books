@@ -98,7 +98,7 @@
     font-size: 14px; font-weight: 300; line-height: 1.8;
   }
 
-  /* ── Pages ── */
+  /* ── Pages (Hardware Accelerated) ── */
   .page {
     position: absolute; top: 0;
     width: var(--page-w); height: var(--page-h);
@@ -132,11 +132,9 @@
     content: ''; position: absolute; inset: 0; pointer-events: none; 
   }
   
-  /* Moving shadows */
   .page-front::after { background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); }
   .page-back::after  { background: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); }
 
-  /* Static panel shadows */
   #left-panel, #right-panel, .under-page {
     position: absolute; top: 0;
     width: var(--page-w); height: var(--page-h);
@@ -210,6 +208,7 @@
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   
+  /* ── Header Icons ── */
   .home-btn, .fs-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; background: transparent; border: 1px solid rgba(255,255,255,0.2);
@@ -265,27 +264,41 @@
 </div>
 
 <div id="controls">
-  <button class="nav-btn" onclick="goToPage(0)">&#10073;&#9664;</button>
+  <button class="nav-btn" id="btn-first" onclick="goToPage(0)">&#10073;&#9664;</button>
   <button class="nav-btn" id="btn-prev" onclick="turnPage(-1)">&#9664;</button>
   <div id="progress-track" onclick="scrubTo(event)">
     <div id="progress-fill"></div>
     <div id="progress-thumb"></div>
   </div>
   <button class="nav-btn" id="btn-next" onclick="turnPage(1)">&#9654;</button>
-  <button class="nav-btn" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
+  <button class="nav-btn" id="btn-last" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
 </div>
 
 <script>
-const TOTAL_IMAGES = 24, TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
-const IMG_DIR = 'pages/', IMG_EXT = '.webp'; 
+const TOTAL_IMAGES = 24;
+const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
+const IMG_DIR = 'pages/';
+const IMG_EXT = '.webp'; 
+
 let current = 0, isAnimating = false, PAGE_ASPECT = 680 / 490;
 const loadedImages = new Set(); 
 
-const book = document.getElementById('book'), leftImg = document.getElementById('left-img'), rightImg = document.getElementById('right-img'),
-      curEl = document.getElementById('cur-page'), fillEl = document.getElementById('progress-fill'), thumbEl = document.getElementById('progress-thumb'),
-      thumbStrip = document.getElementById('thumb-strip'), introPanel = document.getElementById('intro-panel');
+const book = document.getElementById('book'), 
+      leftImg = document.getElementById('left-img'), 
+      rightImg = document.getElementById('right-img'),
+      curEl = document.getElementById('cur-page'), 
+      fillEl = document.getElementById('progress-fill'), 
+      thumbEl = document.getElementById('progress-thumb'),
+      thumbStrip = document.getElementById('thumb-strip'), 
+      introPanel = document.getElementById('intro-panel');
 
 function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
+
+function getSpread(s) {
+  if (s === 0) return { left: null, right: 1 };
+  if (s === TOTAL_SPREADS - 1) return { left: TOTAL_IMAGES, right: null };
+  return { left: s * 2, right: s * 2 + 1 };
+}
 
 function smartLoad(n) {
   if (!n || loadedImages.has(n)) return;
@@ -296,39 +309,61 @@ function manageAssets(s) {
   [s, s + 1, s + 2, s - 1].forEach(num => {
     if (num >= 0 && num < TOTAL_SPREADS) {
       const sp = getSpread(num);
-      if (sp.left) smartLoad(sp.left); if (sp.right) smartLoad(sp.right);
+      if (sp.left) smartLoad(sp.left);
+      if (sp.right) smartLoad(sp.right);
     }
   });
 }
 
-function getSpread(s) {
-  if (s === 0) return { left: null, right: 1 };
-  if (s === TOTAL_SPREADS - 1) return { left: TOTAL_IMAGES, right: null };
-  return { left: s * 2, right: s * 2 + 1 };
-}
-
 function renderSpread(s) {
   const sp = getSpread(s);
-  leftImg.src = imgSrc(sp.left); leftPanel.style.visibility = sp.left ? 'visible' : 'hidden';
-  rightImg.src = imgSrc(sp.right); rightPanel.style.visibility = sp.right ? 'visible' : 'hidden';
-  curEl.textContent = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back' : `${sp.left}–${sp.right}`;
+  
+  if (sp.left) { 
+    leftImg.src = imgSrc(sp.left); 
+    document.getElementById('left-panel').style.visibility = 'visible'; 
+  } else { 
+    leftImg.src = ''; 
+    document.getElementById('left-panel').style.visibility = 'hidden'; 
+  }
+  
+  if (sp.right) { 
+    rightImg.src = imgSrc(sp.right); 
+    document.getElementById('right-panel').style.visibility = 'visible'; 
+  } else { 
+    rightImg.src = ''; 
+    document.getElementById('right-panel').style.visibility = 'hidden'; 
+  }
+
+  curEl.textContent = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back' : sp.left + '–' + sp.right;
   const pct = (s / (TOTAL_SPREADS - 1)) * 100;
-  fillEl.style.width = pct + '%'; thumbEl.style.left = pct + '%';
+  fillEl.style.width = pct + '%'; 
+  thumbEl.style.left = pct + '%';
   introPanel.style.opacity = (s === 0) ? '1' : '0';
+
   document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
+  
+  document.getElementById('btn-first').disabled = s === 0;
+  document.getElementById('btn-prev').disabled  = s === 0;
+  document.getElementById('btn-next').disabled  = s >= TOTAL_SPREADS - 1;
+  document.getElementById('btn-last').disabled  = s >= TOTAL_SPREADS - 1;
+
   manageAssets(s);
 }
 
 function turnPage(dir) {
   if (isAnimating) return;
-  const next = current + dir; if (next < 0 || next >= TOTAL_SPREADS) return;
+  const next = current + dir; 
+  if (next < 0 || next >= TOTAL_SPREADS) return;
   isAnimating = true;
 
   const curSp = getSpread(current), nextSp = getSpread(next);
-  const page = document.createElement('div'); page.className = 'page'; page.style.zIndex = '10'; 
+  const page = document.createElement('div'); 
+  page.className = 'page'; page.style.zIndex = '10'; 
+  
   const front = document.createElement('div'); front.className = 'page-face page-front';
   const back = document.createElement('div'); back.className = 'page-face page-back';
   const fi = document.createElement('img'), bi = document.createElement('img');
+  
   const underPage = document.createElement('div'), underImg = document.createElement('img');
   underPage.className = 'under-page ' + (dir > 0 ? 'right-side' : 'left-side');
 
@@ -344,13 +379,19 @@ function turnPage(dir) {
     page.style.left = '0'; page.style.transformOrigin = 'right center';
   }
 
-  front.appendChild(fi); back.appendChild(bi); page.appendChild(front); page.appendChild(back); book.appendChild(page);
+  front.appendChild(fi); back.appendChild(bi); 
+  page.appendChild(front); page.appendChild(back); 
+  book.appendChild(page);
 
-  requestAnimationFrame(() => requestAnimationFrame(() => { page.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(180deg)'; }));
+  requestAnimationFrame(() => requestAnimationFrame(() => { 
+    page.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(180deg)'; 
+  }));
 
   page.addEventListener('transitionend', () => {
-    current = next; renderSpread(current);
-    if (page.parentNode) book.removeChild(page); if (underPage.parentNode) book.removeChild(underPage);
+    current = next; 
+    renderSpread(current);
+    if (page.parentNode) book.removeChild(page); 
+    if (underPage.parentNode) book.removeChild(underPage);
     isAnimating = false;
   }, { once: true });
 }
@@ -359,7 +400,8 @@ function resizeBook() {
   const availW = window.innerWidth - 140, availH = window.innerHeight - 170;
   let pageW = Math.min(680, Math.floor(availW / 2)), pageH = Math.round(pageW / PAGE_ASPECT);
   if (pageH > availH) { pageH = Math.min(490, availH); pageW = Math.round(pageH * PAGE_ASPECT); }
-  document.documentElement.style.setProperty('--page-w', pageW + 'px'); document.documentElement.style.setProperty('--page-h', pageH + 'px');
+  document.documentElement.style.setProperty('--page-w', pageW + 'px'); 
+  document.documentElement.style.setProperty('--page-h', pageH + 'px');
 }
 
 function goHome() { location.href = '../index.html'; } 
@@ -369,10 +411,29 @@ function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.current
 function buildThumbs() {
   for (let s = 0; s < TOTAL_SPREADS; s++) {
     const sp = getSpread(s), d = document.createElement('div');
-    d.className = 'thumb'; d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
-    d.onclick = () => goToPage(s); thumbStrip.appendChild(d);
+    d.className = 'thumb'; 
+    d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
+    d.onclick = () => goToPage(s); 
+    thumbStrip.appendChild(d);
   }
 }
+
+let touchStartX = null, touchStartY = null;
+document.getElementById('stage').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('stage').addEventListener('touchend', e => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? turnPage(1) : turnPage(-1); }
+  touchStartX = null; touchStartY = null;
+}, { passive: true });
+document.getElementById('left-panel').addEventListener('click',  () => turnPage(-1));
+document.getElementById('right-panel').addEventListener('click', () => turnPage(1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') turnPage(1);
+  if (e.key === 'ArrowLeft') turnPage(-1);
+});
 
 document.addEventListener('fullscreenchange', () => {
   const isFs = !!document.fullscreenElement;
@@ -391,14 +452,26 @@ function detectAspectAndInit() {
   initialImages.forEach(num => {
     const img = new Image();
     img.onload = img.onerror = () => {
-      loadedCount++; if (num === 1 && img.naturalWidth) PAGE_ASPECT = img.naturalWidth / img.naturalHeight;
-      if (loadedCount === initialImages.length) { init(); setTimeout(() => { document.getElementById('cover-page').classList.add('hidden'); }, 600); }
+      loadedCount++; 
+      if (num === 1 && img.naturalWidth) PAGE_ASPECT = img.naturalWidth / img.naturalHeight;
+      if (loadedCount === initialImages.length) { 
+        init(); 
+        setTimeout(() => { document.getElementById('cover-page').classList.add('hidden'); }, 600); 
+      }
     };
-    img.src = imgSrc(num); loadedImages.add(num);
+    img.src = imgSrc(num); 
+    loadedImages.add(num);
   });
 }
 
-function init() { resizeBook(); window.addEventListener('resize', resizeBook); buildThumbs(); document.getElementById('tot-pages').textContent = TOTAL_IMAGES; renderSpread(0); }
+function init() { 
+  resizeBook(); 
+  window.addEventListener('resize', resizeBook); 
+  buildThumbs(); 
+  document.getElementById('tot-pages').textContent = TOTAL_IMAGES; 
+  renderSpread(0); 
+}
+
 detectAspectAndInit();
 </script>
 </body>
