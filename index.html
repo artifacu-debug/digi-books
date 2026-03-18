@@ -3,183 +3,524 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DigiBooks Library — Wolfsonian</title>
+<title>Insectes — Wolfsonian DigiBooks</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  
+
   :root {
     --ink: #111;
     --paper: #f0f0f0;
     --mid: #777;
-    --accent: #fff;
+    --page-w: 640px;
+    --page-h: 461px;
   }
 
-  body {
-    background-color: var(--ink);
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--ink);
+    font-family: 'Source Sans 3', 'Aptos', 'Calibri', 'Segoe UI', Arial, sans-serif;
     color: var(--paper);
-    font-family: 'Source Sans 3', sans-serif;
-    line-height: 1.6;
-    overflow-x: hidden;
+    overflow: hidden;
+    user-select: none;
   }
 
-  body::before {
+  body::after {
     content: '';
-    position: fixed; inset: 0;
-    background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #111 100%);
-    z-index: -1;
+    position: fixed; inset: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none; z-index: 9998;
   }
 
+  /* ── Header ── */
   header {
-    max-width: 900px;
-    margin: 80px auto 60px;
-    padding: 0 40px;
-    text-align: center;
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px 14px;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(17,17,17,0.97) 70%, transparent);
   }
-
+  
   .wordmark {
     font-weight: 600; font-size: 14px;
-    letter-spacing: 0.3em; text-transform: uppercase;
-    color: var(--mid); margin-bottom: 24px;
-    display: block;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--paper);
+  }
+  
+  .page-counter {
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--mid); text-transform: uppercase; font-weight: 300;
+  }
+  
+  .page-counter span { color: var(--paper); font-weight: 600; }
+
+  /* ── Stage & Book ── */
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 2200px;
   }
 
-  h1 {
-    font-size: clamp(32px, 5vw, 52px);
-    font-weight: 300; letter-spacing: 0.05em;
-    margin-bottom: 32px; text-transform: uppercase;
-  }
-
-  .intro-text {
-    font-size: 16px; font-weight: 300;
-    color: var(--mid); max-width: 650px;
-    margin: 0 auto; letter-spacing: 0.02em;
-  }
-
-  .shelf-container {
-    max-width: 1200px;
-    margin: 0 auto 100px;
-    padding: 0 40px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 40px;
-  }
-
-  .book-card {
+  #book {
     position: relative;
-    aspect-ratio: 3 / 4;
-    background: #181818;
+    width: calc(var(--page-w) * 2);
+    height: var(--page-h);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.85));
+    flex-shrink: 0;
+  }
+
+  #spine {
+    position: absolute; top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 8px;
+    background: linear-gradient(to right, #000, #2a2a2a, #000);
+    z-index: 50;
+    box-shadow: 0 0 18px rgba(0,0,0,0.9);
+  }
+
+  /* ── Intro Placard (Page 0) ── */
+  #intro-panel {
+    position: absolute; top: 0; left: 0;
+    width: var(--page-w); height: var(--page-h);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 12% 0 8%;
+    color: var(--mid);
+    opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+  }
+  #intro-panel h2 {
+    color: var(--paper); font-size: 22px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  #intro-panel .divider {
+    width: 40px; height: 1px; background: rgba(255,255,255,0.2); margin: 20px 0;
+  }
+  #intro-panel p {
+    font-size: 14px; font-weight: 300; line-height: 1.8;
+  }
+
+  /* ── Pages (Hardware Accelerated) ── */
+  .page {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 0.72s cubic-bezier(0.645, 0.045, 0.355, 1.000);
     cursor: pointer;
-    overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.2, 0, 0.2, 1);
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    will-change: transform;
   }
+  .page.right-side { right: 0; transform-origin: right center; }
 
-  .book-card:hover {
-    transform: translateY(-12px);
-    border-color: rgba(255,255,255,0.25);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-  }
-
-  .book-cover {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transition: all 0.6s ease;
-  }
-
-  .book-overlay {
+  .page-face {
     position: absolute; inset: 0;
-    background: rgba(10, 10, 10, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 40px;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    z-index: 2;
+    backface-visibility: hidden;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    transform: translateZ(0); 
+  }
+  .page-front { background: #fff; }
+  .page-back  { background: #fff; transform: rotateY(180deg); }
+  
+  .page-face img { 
+    width: 100%; height: 100%; 
+    object-fit: contain; display: block; 
+    pointer-events: none; background: #fff;
+    image-rendering: -webkit-optimize-contrast;
   }
 
-  .book-card:hover .book-overlay,
-  .book-card.active .book-overlay {
-    opacity: 1;
+  /* ── Book Binding / Crease Shadows ── */
+  .page-face::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+  
+  /* The moving front page (shadow on the left edge) */
+  .page-front::after { 
+    background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); 
+  }
+  /* The moving back page (shadow on the right edge) */
+  .page-back::after  { 
+    background: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); 
   }
 
-  .book-overlay h2 {
-    font-size: 18px; font-weight: 600;
-    margin-bottom: 18px; text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--paper);
+  /* ── Stationary Panels ── */
+  #left-panel, #right-panel {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    overflow: hidden;
+    transform: translateZ(0);
+  }
+  #left-panel { left: 0; }
+  #right-panel { right: 0; }
+  #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
+
+  /* Stationary Panel Crease Shadows */
+  #left-panel::after, #right-panel::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+  }
+  #left-panel::after {
+    background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 4%, rgba(255,255,255,0.1) 8%, transparent 25%);
+  }
+  #right-panel::after {
+    background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 4%, rgba(255,255,255,0.1) 8%, transparent 25%);
   }
 
-  .book-overlay p {
-    font-size: 13.5px; font-weight: 300;
-    color: #999; line-height: 1.8;
-    margin-bottom: 28px;
-    max-width: 240px;
+  /* ── Controls ── */
+  #controls {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; padding: 22px 36px 28px;
+    background: linear-gradient(to top, rgba(17,17,17,0.97) 60%, transparent);
+    z-index: 100;
+  }
+  .nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: var(--paper);
+    cursor: pointer; transition: all 0.2s; font-size: 16px;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+  .nav-btn:disabled { opacity: 0.15; cursor: default; }
+
+  #progress-track {
+    position: relative; width: 280px; height: 1px;
+    background: rgba(255,255,255,0.15); cursor: pointer;
+  }
+  #progress-fill { height: 100%; background: var(--paper); transition: width 0.4s ease; }
+  #progress-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 8px; height: 8px; background: var(--paper);
+    border-radius: 50%; transition: left 0.4s ease; pointer-events: none;
   }
 
-  .btn-open {
-    padding: 12px 30px;
-    border: 1px solid rgba(255,255,255,0.4);
-    background: transparent;
-    color: var(--paper);
-    font-size: 10px; text-transform: uppercase;
-    letter-spacing: 0.25em;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  /* ── Loading Screen ── */
+  #cover-page {
+    position: absolute; inset: 0; background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    transition: opacity 0.8s ease, pointer-events 0s 0.8s;
+  }
+  #cover-page.hidden { opacity: 0; pointer-events: none; }
+  .cover-inner { text-align: center; }
+  .cover-title {
+    font-size: 46px; font-weight: 300; letter-spacing: 0.12em;
+    line-height: 1.05; color: var(--paper);
+    margin-bottom: 10px; text-transform: uppercase;
+  }
+  .loading-text {
+    font-size: 11px; 
+    letter-spacing: 0.25em; 
+    text-transform: uppercase;
+    color: var(--mid); 
+    margin-top: 40px; 
+    animation: pulse 1.5s infinite ease-in-out;
   }
 
-  .btn-open:hover {
-    background: var(--paper);
-    color: var(--ink);
-    border-color: var(--paper);
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
   }
 
-  @media (max-width: 600px) {
-    header { margin-top: 50px; padding: 0 24px; }
-    h1 { font-size: 30px; }
-    .shelf-container { grid-template-columns: 1fr; padding: 0 30px; }
+  /* ── Thumbnails ── */
+  #thumb-strip {
+    position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px;
+    z-index: 90; max-height: 70vh; overflow-y: auto; scrollbar-width: none;
+  }
+  .thumb {
+    width: 36px; height: 26px; overflow: hidden; cursor: pointer;
+    border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0;
+  }
+  .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  
+  /* ── Header Icons ── */
+  .home-btn, .fs-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; 
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--mid); cursor: pointer; transition: all 0.2s ease;
+  }
+  .home-btn:hover, .fs-btn:hover { 
+    background: rgba(255,255,255,0.1); 
+    color: var(--paper); 
+    border-color: rgba(255,255,255,0.5); 
   }
 </style>
 </head>
 <body>
 
+<div id="cover-page">
+  <div class="cover-inner">
+    <div class="cover-title">Insectes</div>
+    <div style="font-size:14px; font-weight:300; letter-spacing:0.25em; color:var(--mid); text-transform:uppercase;">
+      c. 1925
+    </div>
+    <div class="loading-text">Loading Archive...</div>
+  </div>
+</div>
+
 <header>
-  <span class="wordmark">The Wolfsonian–FIU</span>
-  <h1>DigiBooks Library</h1>
-  <p class="intro-text">
-    Welcome to the DigiBooks Library, a repository of historical publications and portfolios at The Wolfsonian–FIU. 
-    Tap or click a book to see its description, then tap or click again to open it. 
-    Swipe or click to turn the pages.
-  </p>
+  <div class="wordmark">Wolfsonian</div>
+  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">24</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+      <svg id="fs-expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+      <svg id="fs-compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+    </button>
+    <button class="home-btn" onclick="goHome()" title="Back to Library">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
+  </div>
 </header>
 
-<main class="shelf-container">
-  
-  <div class="book-card" onclick="this.classList.toggle('active')">
-    <img src="insects/pages/1.webp" alt="Insectes, c. 1925" class="book-cover">
-    
-    <div class="book-overlay">
+<div id="thumb-strip"></div>
+
+<div id="stage">
+  <div id="book">
+    <div id="spine"></div>
+    <div id="intro-panel">
       <h2>Insectes, c. 1925</h2>
+      <div class="divider"></div>
       <p>
-        A companion to Papillons, this portfolio takes insects as its subject. 
-        Séguy also hoped that artists and designers would be inspired by 
-        the abstracted patterns he based off of the scientific illustrations.
+        A companion to <em>Papillons</em>, this portfolio takes insects as its subject. 
+        While the precise renderings provided detailed information, Séguy also hoped 
+        that artists and designers would be inspired by the abstracted patterns 
+        he based off of the scientific illustrations.
       </p>
-      <button class="btn-open" onclick="location.href='insects/insects.html'">Open Book</button>
     </div>
+    <div id="left-panel"><img id="left-img" src="" alt=""></div>
+    <div id="right-panel"><img id="right-img" src="" alt=""></div>
   </div>
+</div>
 
-  <div class="book-card" style="opacity: 0.1; cursor: default; border-style: dashed;">
-    <div style="display:flex; height:100%; align-items:center; justify-content:center; color: var(--mid); font-size: 10px; letter-spacing: 0.3em;">
-        [ ARCHIVE SLOT ]
-    </div>
+<div id="controls">
+  <button class="nav-btn" onclick="goToPage(0)">&#10073;&#9664;</button>
+  <button class="nav-btn" id="btn-prev" onclick="turnPage(-1)">&#9664;</button>
+  <div id="progress-track" onclick="scrubTo(event)">
+    <div id="progress-fill"></div>
+    <div id="progress-thumb"></div>
   </div>
+  <button class="nav-btn" id="btn-next" onclick="turnPage(1)">&#9654;</button>
+  <button class="nav-btn" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
+</div>
 
-</main>
+<script>
+// ─── Config ────────────────────────────────────────────────────
+const TOTAL_IMAGES  = 24;
+const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
+const IMG_DIR = 'pages/';
+const IMG_EXT = '.webp'; 
 
+// ─── State ─────────────────────────────────────────────────────
+let current = 0, isAnimating = false;
+let PAGE_ASPECT = 680 / 490;
+const loadedImages = new Set(); 
+
+// ─── Element refs ──────────────────────────────────────────────
+const book = document.getElementById('book'), 
+      leftImg = document.getElementById('left-img'), 
+      rightImg = document.getElementById('right-img'),
+      curEl = document.getElementById('cur-page'), 
+      fillEl = document.getElementById('progress-fill'), 
+      thumbEl = document.getElementById('progress-thumb'), 
+      thumbStrip = document.getElementById('thumb-strip'),
+      introPanel = document.getElementById('intro-panel');
+
+function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
+
+// ─── UPGRADED: Aggressive Preload Engine ───────────────────────
+function smartLoad(n) {
+  if (!n || loadedImages.has(n)) return;
+  const img = new Image();
+  img.src = imgSrc(n);
+  loadedImages.add(n);
+}
+
+function manageAssets(s) {
+  // Now fetches the current spread, the previous, AND the next TWO spreads
+  const spreadsToLoad = [s, s + 1, s + 2, s - 1];
+  
+  spreadsToLoad.forEach(num => {
+    if (num >= 0 && num < TOTAL_SPREADS) {
+      const sp = getSpread(num);
+      if (sp.left)  smartLoad(sp.left);
+      if (sp.right) smartLoad(sp.right);
+    }
+  });
+}
+
+function getSpread(s) {
+  if (s === 0) return { left: null, right: 1 };
+  if (s === TOTAL_SPREADS - 1) return { left: TOTAL_IMAGES, right: null };
+  return { left: s * 2, right: s * 2 + 1 };
+}
+
+function renderSpread(s) {
+  const sp = getSpread(s);
+  
+  if (sp.left)  { leftImg.src = imgSrc(sp.left);  document.getElementById('left-panel').style.visibility = 'visible'; }
+  else          { leftImg.src = '';               document.getElementById('left-panel').style.visibility = 'hidden'; }
+  
+  if (sp.right) { rightImg.src = imgSrc(sp.right); document.getElementById('right-panel').style.visibility = 'visible'; }
+  else          { rightImg.src = '';               document.getElementById('right-panel').style.visibility = 'hidden'; }
+
+  curEl.textContent = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back' : `${sp.left}–${sp.right}`;
+  
+  const pct = (s / (TOTAL_SPREADS - 1)) * 100;
+  fillEl.style.width = pct + '%'; 
+  thumbEl.style.left = pct + '%';
+
+  introPanel.style.opacity = (s === 0) ? '1' : '0';
+
+  document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
+  
+  manageAssets(s); // Triggers the preloader
+}
+
+// ─── FIXED: Page Turn Logic ────────────────────────────────────
+function turnPage(dir) {
+  if (isAnimating) return;
+  const next = current + dir;
+  if (next < 0 || next >= TOTAL_SPREADS) return;
+  isAnimating = true;
+
+  const curSp = getSpread(current), nextSp = getSpread(next);
+  const page = document.createElement('div');
+  page.className = 'page';
+  
+  const front = document.createElement('div'); front.className = 'page-face page-front';
+  const back = document.createElement('div');  back.className  = 'page-face page-back';
+  const fi = document.createElement('img'), bi = document.createElement('img');
+
+  if (dir > 0) {
+    // FIX: Pre-paint the stationary right panel BEFORE the flip starts
+    if (nextSp.right) { rightImg.src = imgSrc(nextSp.right); document.getElementById('right-panel').style.visibility = 'visible'; }
+    else              { rightImg.src = ''; document.getElementById('right-panel').style.visibility = 'hidden'; }
+
+    fi.src = imgSrc(curSp.right);
+    bi.src = imgSrc(nextSp.left);
+    page.style.right = '0'; 
+    page.style.transformOrigin = 'left center';
+  } else {
+    // FIX: Pre-paint the stationary left panel BEFORE the flip starts
+    if (nextSp.left) { leftImg.src = imgSrc(nextSp.left); document.getElementById('left-panel').style.visibility = 'visible'; }
+    else             { leftImg.src = ''; document.getElementById('left-panel').style.visibility = 'hidden'; }
+
+    fi.src = imgSrc(curSp.left);
+    bi.src = imgSrc(nextSp.right);
+    page.style.left = '0'; 
+    page.style.transformOrigin = 'right center';
+  }
+
+  front.appendChild(fi); back.appendChild(bi);
+  page.appendChild(front); page.appendChild(back);
+  book.appendChild(page);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      page.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(180deg)';
+    });
+  });
+
+  page.addEventListener('transitionend', () => {
+    current = next; 
+    renderSpread(current);
+    book.removeChild(page); 
+    isAnimating = false;
+  }, { once: true });
+}
+
+function resizeBook() {
+  const availW = window.innerWidth - 140, availH = window.innerHeight - 170;
+  let pageW = Math.min(680, Math.floor(availW / 2)), pageH = Math.round(pageW / PAGE_ASPECT);
+  if (pageH > availH) { pageH = Math.min(490, availH); pageW = Math.round(pageH * PAGE_ASPECT); }
+  document.documentElement.style.setProperty('--page-w', pageW + 'px');
+  document.documentElement.style.setProperty('--page-h', pageH + 'px');
+}
+
+function goHome() { location.href = '../index.html'; } 
+function goToPage(s) { if (!isAnimating && s !== current) { current = s; renderSpread(s); } }
+function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth)); goToPage(Math.round(pct * (TOTAL_SPREADS - 1))); }
+
+function buildThumbs() {
+  for (let s = 0; s < TOTAL_SPREADS; s++) {
+    const sp = getSpread(s), d = document.createElement('div');
+    d.className = 'thumb'; 
+    d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
+    d.onclick = () => goToPage(s); 
+    thumbStrip.appendChild(d);
+  }
+}
+
+// ─── Mobile Swipe Controls ─────────────────────────────────────
+let touchStartX = null, touchStartY = null;
+document.getElementById('stage').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('stage').addEventListener('touchend', e => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? turnPage(1) : turnPage(-1); }
+  touchStartX = null; touchStartY = null;
+}, { passive: true });
+document.getElementById('left-panel').addEventListener('click',  () => turnPage(-1));
+document.getElementById('right-panel').addEventListener('click', () => turnPage(1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') turnPage(1);
+  if (e.key === 'ArrowLeft') turnPage(-1);
+});
+
+// ─── Fullscreen Event Listener ─────────────────────────────────
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.getElementById('fs-expand').style.display = isFs ? 'none' : 'block';
+  document.getElementById('fs-compress').style.display = isFs ? 'block' : 'none';
+  setTimeout(resizeBook, 100);
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => console.error(e));
+  else document.exitFullscreen();
+}
+
+// ─── Initialization & Loading Screen ───────────────────────────
+function detectAspectAndInit() {
+  let loadedCount = 0;
+  const initialImages = [1, 2, 3, 4, 5]; // Preload cover and first two spreads
+  
+  initialImages.forEach(num => {
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      loadedCount++;
+      if (num === 1 && img.naturalWidth) {
+        PAGE_ASPECT = img.naturalWidth / img.naturalHeight;
+      }
+      if (loadedCount === initialImages.length) {
+        init();
+        setTimeout(() => {
+          document.getElementById('cover-page').classList.add('hidden');
+        }, 600);
+      }
+    };
+    img.src = imgSrc(num);
+    loadedImages.add(num);
+  });
+}
+
+function init() {
+  resizeBook(); 
+  window.addEventListener('resize', resizeBook);
+  buildThumbs(); 
+  document.getElementById('tot-pages').textContent = TOTAL_IMAGES;
+  renderSpread(0);
+}
+
+detectAspectAndInit();
+</script>
 </body>
 </html>
