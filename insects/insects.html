@@ -32,7 +32,6 @@
     pointer-events: none; z-index: 9998;
   }
 
-  /* ── Header ── */
   header {
     position: fixed; top: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: space-between;
@@ -40,25 +39,26 @@
     z-index: 100;
     background: linear-gradient(to bottom, rgba(17,17,17,0.97) 70%, transparent);
   }
+  
   .wordmark {
     font-weight: 600; font-size: 14px;
     letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--paper);
   }
+  
   .page-counter {
     font-size: 11px; letter-spacing: 0.18em;
     color: var(--mid); text-transform: uppercase; font-weight: 300;
   }
+  
   .page-counter span { color: var(--paper); font-weight: 600; }
 
-  /* ── Stage ── */
   #stage {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
     perspective: 2200px;
   }
 
-  /* ── Book ── */
   #book {
     position: relative;
     width: calc(var(--page-w) * 2);
@@ -68,7 +68,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Spine ── */
   #spine {
     position: absolute; top: 0; bottom: 0;
     left: 50%; transform: translateX(-50%);
@@ -78,7 +77,6 @@
     box-shadow: 0 0 18px rgba(0,0,0,0.9);
   }
 
-  /* ── Pages ── */
   .page {
     position: absolute; top: 0;
     width: var(--page-w); height: var(--page-h);
@@ -111,7 +109,6 @@
   .page-front::after { background: linear-gradient(to right, rgba(0,0,0,0.1) 0%, transparent 22%); }
   .page-back::after  { background: linear-gradient(to left,  rgba(0,0,0,0.1) 0%, transparent 22%); }
 
-  /* ── Panels ── */
   #left-panel, #right-panel {
     position: absolute; top: 0;
     width: var(--page-w); height: var(--page-h);
@@ -122,7 +119,6 @@
   #right-panel { right: 0; }
   #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
 
-  /* ── Controls ── */
   #controls {
     position: fixed; bottom: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: center;
@@ -151,7 +147,6 @@
     border-radius: 50%; transition: left 0.4s ease; pointer-events: none;
   }
 
-  /* ── Cover ── */
   #cover-page {
     position: absolute; inset: 0; background: var(--ink);
     display: flex; align-items: center; justify-content: center;
@@ -166,7 +161,6 @@
     margin-bottom: 10px; text-transform: uppercase;
   }
 
-  /* ── Thumbnails ── */
   #thumb-strip {
     position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
     display: flex; flex-direction: column; gap: 4px;
@@ -178,10 +172,21 @@
   }
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  
   .home-btn, .fs-btn {
     background: transparent; border: 1px solid rgba(255,255,255,0.2);
     color: var(--mid); cursor: pointer; padding: 6px 14px; font-size: 10px; text-transform: uppercase;
   }
+  .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); }
+  
+  .open-btn {
+    display: inline-block; padding: 11px 34px;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--paper); background: transparent;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .open-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
 </style>
 </head>
 <body>
@@ -198,7 +203,7 @@
 
 <header>
   <div class="wordmark">Wolfsonian</div>
-  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">22</span></div>
+  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">24</span></div>
   <div style="display:flex;align-items:center;gap:10px;">
     <button class="fs-btn" onclick="toggleFullscreen()">FS</button>
     <button class="home-btn" onclick="goHome()">Home</button>
@@ -226,16 +231,17 @@
   <button class="nav-btn" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
 </div>
 
+<script>
 // ─── Config ────────────────────────────────────────────────────
 const TOTAL_IMAGES  = 24;
 const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
 const IMG_DIR = 'pages/';
-const IMG_EXT = '.jpg';
+const IMG_EXT = '.webp'; // Now pointing to your new optimized WebP files
 
 // ─── State ─────────────────────────────────────────────────────
 let current = 0, isAnimating = false;
 let PAGE_ASPECT = 680 / 490;
-const loadedImages = new Set(); // Track what we've already fetched
+const loadedImages = new Set(); 
 
 // ─── Element refs ──────────────────────────────────────────────
 const book = document.getElementById('book'), 
@@ -248,13 +254,12 @@ const book = document.getElementById('book'),
 
 function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
 
-// ─── NEW: Lazy Load & Preload Engine ───────────────────────────
+// ─── Lazy Load & Preload Engine ────────────────────────────────
 function smartLoad(n) {
   if (!n || loadedImages.has(n)) return;
   const img = new Image();
   img.src = imgSrc(n);
   loadedImages.add(n);
-  console.log(`Lazy Loading: Page ${n}`);
 }
 
 function manageAssets(s) {
@@ -262,11 +267,9 @@ function manageAssets(s) {
   const nextSp    = (s + 1 < TOTAL_SPREADS) ? getSpread(s + 1) : null;
   const prevSp    = (s - 1 >= 0) ? getSpread(s - 1) : null;
 
-  // 1. Prioritize current spread
   if (currentSp.left)  smartLoad(currentSp.left);
   if (currentSp.right) smartLoad(currentSp.right);
 
-  // 2. Silently fetch adjacent pages in background
   if (nextSp) {
     if (nextSp.left)  smartLoad(nextSp.left);
     if (nextSp.right) smartLoad(nextSp.right);
@@ -286,7 +289,6 @@ function getSpread(s) {
 function renderSpread(s) {
   const sp = getSpread(s);
   
-  // Set sources immediately (Browser handles the actual fetch)
   if (sp.left)  { leftImg.src = imgSrc(sp.left);  document.getElementById('left-panel').style.visibility = 'visible'; }
   else          { leftImg.src = '';               document.getElementById('left-panel').style.visibility = 'hidden'; }
   
@@ -301,11 +303,9 @@ function renderSpread(s) {
 
   document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
   
-  // Trigger the smart asset manager
   manageAssets(s);
 }
 
-// ─── Optimized Page Turn (Uses cached images) ──────────────────
 function turnPage(dir) {
   if (isAnimating) return;
   const next = current + dir;
@@ -350,7 +350,6 @@ function turnPage(dir) {
   }, { once: true });
 }
 
-// ─── Standard Functions (Resize, Fullscreen, etc.) ─────────────
 function resizeBook() {
   const availW = window.innerWidth - 140, availH = window.innerHeight - 170;
   let pageW = Math.min(680, Math.floor(availW / 2)), pageH = Math.round(pageW / PAGE_ASPECT);
@@ -360,7 +359,10 @@ function resizeBook() {
 }
 
 function openBook() { document.getElementById('cover-page').classList.add('hidden'); renderSpread(0); }
-function goHome() { location.href = '../index.html'; } // Pointing back to shelf
+
+// Points back out of the insects folder to the shelf
+function goHome() { location.href = '../index.html'; } 
+
 function goToPage(s) { if (!isAnimating && s !== current) { current = s; renderSpread(s); } }
 function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth)); goToPage(Math.round(pct * (TOTAL_SPREADS - 1))); }
 
@@ -368,7 +370,6 @@ function buildThumbs() {
   for (let s = 0; s < TOTAL_SPREADS; s++) {
     const sp = getSpread(s), d = document.createElement('div');
     d.className = 'thumb'; 
-    // Thumbs use the same lazy logic - browser loads them as they appear in view
     d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
     d.onclick = () => goToPage(s); 
     thumbStrip.appendChild(d);
@@ -386,7 +387,7 @@ function init() {
   resizeBook(); 
   window.addEventListener('resize', resizeBook);
   buildThumbs(); 
-  document.getElementById('tot-pages').textContent = TOTAL_SPREADS;
+  document.getElementById('tot-pages').textContent = TOTAL_IMAGES;
   renderSpread(0);
 }
 
