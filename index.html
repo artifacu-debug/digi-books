@@ -30,7 +30,6 @@
     z-index: -1;
   }
 
-  /* ── TIGHTENED HEADER ── */
   header {
     max-width: 900px;
     margin: 40px auto 30px;
@@ -160,6 +159,17 @@
 </header>
 
 <main class="shelf-container">
+
+  <div class="book-card" onclick="this.classList.toggle('active')">
+    <img src="bruynzeel/pages/1.webp" alt="Bruynzeel's Fabrieken Zaandam, 1931" class="book-cover">
+    <div class="book-overlay">
+      <h2>Bruynzeel's Fabrieken Zaandam, 1931</h2>
+      <p>
+        Vilmos Huszár, founding member of De Stijl, combines photography and typography to tell the history of the Bruynzeel wood factory in this promotional album.
+      </p>
+      <button class="btn-open" onclick="location.href='bruynzeel/bruynzeel.html'">Open Book</button>
+    </div>
+  </div>
   
   <div class="book-card" onclick="this.classList.toggle('active')">
     <img src="insects/pages/1.webp" alt="Insectes, c. 1925" class="book-cover">
@@ -175,17 +185,6 @@
   </div>
 
   <div class="book-card" onclick="this.classList.toggle('active')">
-    <img src="papillons/pages/1.webp" alt="Papillons, c. 1925" class="book-cover">
-    <div class="book-overlay">
-      <h2>Papillons, c. 1925</h2>
-      <p>
-        Intending to inspire modern artists and designers, Emile-Allain Séguy juxtaposed scientifically precise renderings of butterflies and abstracted patterns based on their forms. As with the companion portfolio Insectes, Séguy described butterflies as <em>merveilleuses mécaniques</em> worthy of the same admiration as a locomotive or airplane.
-      </p>
-      <button class="btn-open" onclick="location.href='papillons/papillons.html'">Open Book</button>
-    </div>
-  </div>
-
-  <div class="book-card" onclick="this.classList.toggle('active')">
     <img src="larchitecture/pages/1.webp" alt="L'architecture, 1925" class="book-cover">
     <div class="book-overlay">
       <h2>L'architecture, 1925</h2>
@@ -196,9 +195,36 @@
     </div>
   </div>
 
-  <div class="book-card" style="opacity: 0.1; cursor: default; border-style: dashed;">
-    <div style="display:flex; height:100%; align-items:center; justify-content:center; color: var(--mid); font-size: 10px; letter-spacing: 0.3em;">
-        [ ARCHIVE SLOT ]
+  <div class="book-card" onclick="this.classList.toggle('active')">
+    <img src="negro-drawings/pages/1.webp" alt="Negro Drawings, 1927" class="book-cover">
+    <div class="book-overlay">
+      <h2>Negro Drawings, 1927</h2>
+      <p>
+        Active in the Harlem Renaissance, Miguel Covarrubias produced this portfolio featuring his dynamic observations of dance halls, night clubs, and daily life in New York.
+      </p>
+      <button class="btn-open" onclick="location.href='negro-drawings/negro-drawings.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" onclick="this.classList.toggle('active')">
+    <img src="papillons/pages/1.webp" alt="Papillons, c. 1925" class="book-cover">
+    <div class="book-overlay">
+      <h2>Papillons, c. 1925</h2>
+      <p>
+        Intending to inspire modern artists and designers, Emile-Allain Séguy juxtaposed scientifically precise renderings of butterflies and abstracted patterns based on their forms.
+      </p>
+      <button class="btn-open" onclick="location.href='papillons/papillons.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" onclick="this.classList.toggle('active')">
+    <img src="ambassade/pages/1.webp" alt="Une ambassade française, 1925" class="book-cover">
+    <div class="book-overlay">
+      <h2>Une ambassade française, 1925</h2>
+      <p>
+        Interiors are shown as pochoir renderings followed by documentary photographs of the completed rooms for the suite exhibited at the 1925 Paris Exposition.
+      </p>
+      <button class="btn-open" onclick="location.href='ambassade/ambassade.html'">Open Book</button>
     </div>
   </div>
 
