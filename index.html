@@ -32,7 +32,7 @@
 
   header {
     max-width: 900px;
-    margin: 40px auto 30px;
+    margin: 40px auto 20px;
     padding: 0 40px;
     text-align: center;
   }
@@ -55,6 +55,35 @@
     font-size: 15px; font-weight: 300;
     color: var(--mid); max-width: 750px;
     margin: 0 auto; letter-spacing: 0.02em;
+  }
+
+  /* ── SORT CONTROLS ── */
+  .controls-bar {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .controls-bar select {
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .controls-bar select:hover {
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  .controls-bar select option {
+    background: var(--ink);
+    color: var(--paper);
   }
 
   .shelf-container {
@@ -158,12 +187,22 @@
   </p>
 </header>
 
-<main class="shelf-container">
+<div class="controls-bar">
+  <span style="color: var(--mid); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; margin-right: 12px;">Sort By</span>
+  <select id="sort-select" onchange="sortBooks()">
+    <option value="title-asc">Title (A-Z)</option>
+    <option value="title-desc">Title (Z-A)</option>
+    <option value="year-asc">Date (Oldest First)</option>
+    <option value="year-desc">Date (Newest First)</option>
+  </select>
+</div>
 
-  <div class="book-card" onclick="this.classList.toggle('active')">
+<main class="shelf-container" id="library-grid">
+
+  <div class="book-card" data-title="Bruynzeel's Fabrieken Zaandam" data-year="1931" onclick="this.classList.toggle('active')">
     <img src="bruynzeel/pages/1.webp" alt="Bruynzeel's Fabrieken Zaandam, 1931" class="book-cover">
     <div class="book-overlay">
-      <h2>Bruynzeel's Fabrieken Zaandam, 1931</h2>
+      <h2>Bruynzeel's Fabrieken, 1931</h2>
       <p>
         Vilmos Huszár, founding member of De Stijl, combines photography and typography to tell the history of the Bruynzeel wood factory in this promotional album.
       </p>
@@ -171,20 +210,30 @@
     </div>
   </div>
   
-  <div class="book-card" onclick="this.classList.toggle('active')">
+  <div class="book-card" data-title="Industrial Design, A Practical Guide" data-year="1940" onclick="this.classList.toggle('active')">
+    <img src="industrial/pages/1.webp" alt="Industrial Design, A Practical Guide, 1940" class="book-cover">
+    <div class="book-overlay">
+      <h2>Industrial Design, 1940</h2>
+      <p>
+        An early consulting designer, Harold Van Doren wrote this as a pragmatic how-to instructional, championing the principle of streamlining.
+      </p>
+      <button class="btn-open" onclick="location.href='industrial/industrial.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" data-title="Insectes" data-year="1925" onclick="this.classList.toggle('active')">
     <img src="insects/pages/1.webp" alt="Insectes, c. 1925" class="book-cover">
     <div class="book-overlay">
       <h2>Insectes, c. 1925</h2>
       <p>
         A companion to Papillons, this portfolio takes insects as its subject. 
-        Séguy also hoped that artists and designers would be inspired by 
-        the abstracted patterns he based off of the scientific illustrations.
+        Séguy hoped artists and designers would be inspired by these abstracted scientific illustrations.
       </p>
       <button class="btn-open" onclick="location.href='insects/insects.html'">Open Book</button>
     </div>
   </div>
 
-  <div class="book-card" onclick="this.classList.toggle('active')">
+  <div class="book-card" data-title="L'architecture" data-year="1925" onclick="this.classList.toggle('active')">
     <img src="larchitecture/pages/1.webp" alt="L'architecture, 1925" class="book-cover">
     <div class="book-overlay">
       <h2>L'architecture, 1925</h2>
@@ -195,7 +244,18 @@
     </div>
   </div>
 
-  <div class="book-card" onclick="this.classList.toggle('active')">
+  <div class="book-card" data-title="L'art decoratif a Paris" data-year="1928" onclick="this.classList.toggle('active')">
+    <img src="lartdecoratif/pages/1.webp" alt="L'art décoratif à Paris, 1928" class="book-cover">
+    <div class="book-overlay">
+      <h2>L'art décoratif, 1928</h2>
+      <p>
+        Published after the 1925 Paris Exposition, this portfolio shows how modernist trends were diffused throughout the decorative arts in France.
+      </p>
+      <button class="btn-open" onclick="location.href='lartdecoratif/lartdecoratif.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" data-title="Negro Drawings" data-year="1927" onclick="this.classList.toggle('active')">
     <img src="negrodrawings/pages/1.webp" alt="Negro Drawings, 1927" class="book-cover">
     <div class="book-overlay">
       <h2>Negro Drawings, 1927</h2>
@@ -206,7 +266,7 @@
     </div>
   </div>
 
-  <div class="book-card" onclick="this.classList.toggle('active')">
+  <div class="book-card" data-title="Papillons" data-year="1925" onclick="this.classList.toggle('active')">
     <img src="papillons/pages/1.webp" alt="Papillons, c. 1925" class="book-cover">
     <div class="book-overlay">
       <h2>Papillons, c. 1925</h2>
@@ -217,7 +277,18 @@
     </div>
   </div>
 
-  <div class="book-card" onclick="this.classList.toggle('active')">
+  <div class="book-card" data-title="The Rime of the Ancient Mariner" data-year="1876" onclick="this.classList.toggle('active')">
+    <img src="mariner/pages/1.webp" alt="The Rime of the Ancient Mariner, 1876" class="book-cover">
+    <div class="book-overlay">
+      <h2>Ancient Mariner, 1876</h2>
+      <p>
+        Purchased by founder Micky Wolfson Jr., this copy features illustrations by French artist Gustave Doré. His gothic style was well-suited to Coleridge's romantic tale.
+      </p>
+      <button class="btn-open" onclick="location.href='mariner/mariner.html'">Open Book</button>
+    </div>
+  </div>
+
+  <div class="book-card" data-title="Une ambassade francaise" data-year="1925" onclick="this.classList.toggle('active')">
     <img src="afrenchambassy/pages/1.webp" alt="Une ambassade française, 1925" class="book-cover">
     <div class="book-overlay">
       <h2>Une ambassade française, 1925</h2>
@@ -228,7 +299,42 @@
     </div>
   </div>
 
+  <div class="book-card" data-title="Volkswagen-Werk G.M.B.H, Berlin" data-year="1938" onclick="this.classList.toggle('active')">
+    <img src="volkswagen/pages/1.webp" alt="Volkswagen-Werk G.M.B.H, Berlin, 1938" class="book-cover">
+    <div class="book-overlay">
+      <h2>Volkswagen-Werk, 1938</h2>
+      <p>
+        This booklet illustrates not only the component parts of the "people's car" but also how the ideal German family might use the vehicle for recreation.
+      </p>
+      <button class="btn-open" onclick="location.href='volkswagen/volkswagen.html'">Open Book</button>
+    </div>
+  </div>
+
 </main>
+
+<script>
+  function sortBooks() {
+    const container = document.getElementById('library-grid');
+    const cards = Array.from(container.querySelectorAll('.book-card'));
+    const sortBy = document.getElementById('sort-select').value;
+
+    cards.sort((a, b) => {
+      if (sortBy === 'title-asc') {
+        return a.dataset.title.localeCompare(b.dataset.title);
+      } else if (sortBy === 'title-desc') {
+        return b.dataset.title.localeCompare(a.dataset.title);
+      } else if (sortBy === 'year-asc') {
+        return parseInt(a.dataset.year) - parseInt(b.dataset.year);
+      } else if (sortBy === 'year-desc') {
+        return parseInt(b.dataset.year) - parseInt(a.dataset.year);
+      }
+    });
+
+    // Clear and re-append in the new sorted order
+    container.innerHTML = '';
+    cards.forEach(card => container.appendChild(card));
+  }
+</script>
 
 </body>
 </html>
