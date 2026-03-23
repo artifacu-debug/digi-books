@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Industrial Design, A Practical Guide — Wolfsonian DigiBooks</title>
+<title>The Rime of the Ancient Mariner — Wolfsonian DigiBooks</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,7 +89,7 @@
     opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
   }
   #intro-panel h2 {
-    color: var(--paper); font-size: 22px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; line-height: 1.3;
+    color: var(--paper); font-size: 22px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;
   }
   #intro-panel .divider {
     width: 40px; height: 1px; background: rgba(255,255,255,0.2); margin: 20px 0;
@@ -251,15 +251,15 @@
 
 <div id="cover-page">
   <div class="cover-inner">
-    <div class="cover-title">Industrial Design, A Practical Guide</div>
-    <div style="font-size:14px; font-weight:300; letter-spacing:0.25em; color:var(--mid); text-transform:uppercase;">1940</div>
+    <div class="cover-title">The Rime of the Ancient Mariner</div>
+    <div style="font-size:14px; font-weight:300; letter-spacing:0.25em; color:var(--mid); text-transform:uppercase;">1876</div>
     <div class="loading-text">Loading Archive...</div>
   </div>
 </div>
 
 <header>
   <div class="wordmark">Wolfsonian</div>
-  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">22</span></div>
+  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">42</span></div>
   <div style="display:flex;align-items:center;gap:10px;">
     <button class="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
       <svg id="fs-expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -284,9 +284,9 @@
   <div id="book">
     <div id="spine"></div>
     <div id="intro-panel">
-      <h2>Industrial Design, A Practical Guide, 1940</h2>
+      <h2>The Rime of the Ancient Mariner, 1876</h2>
       <div class="divider"></div>
-      <p>An early consulting designer in the United States, Harold Van Doren wrote Industrial Design, A Practical Guide as a pragmatic how-to instructional for designers interested in pursuing a career in the field. In it, he championed the principle of streamlining, arguing that it was an approach to design that "no designer can ignore and no modern book on design can afford to not discuss."</p>
+      <p>This copy, purchased by Wolfsonian founder Mitchell "Micky" Wolfson, Jr., as a young boy while traveling with his family in Paris, features illustrations by French artist Gustave Doré. Doré's gothic and melodramatic style was well-suited to Samuel Taylor Coleridge's romantic tale, despite the poem having been originally published nearly 100 years before this version was produced. The poem marks the beginning of British Romantic literature.</p>
       <div class="instruction-text">
         Swipe or use arrows below to navigate <br>
         <span class="hint-arrow">→</span>
@@ -309,7 +309,7 @@
 </div>
 
 <script>
-const TOTAL_IMAGES = 22;
+const TOTAL_IMAGES = 42;
 const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
 const IMG_DIR = 'pages/';
 const IMG_EXT = '.webp'; 
