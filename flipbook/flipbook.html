@@ -177,16 +177,20 @@
   .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
   .nav-btn:disabled { opacity: 0.15; cursor: default; }
 
-  /* ── NEW INSTRUCTIONAL HINT IN CONTROLS ── */
+  /* ── "PILL" STYLE INSTRUCTIONAL HINT ── */
   .controls-hint {
     font-size: 11px;
-    font-weight: 300;
-    color: var(--mid);
-    letter-spacing: 0.08em;
+    font-weight: 400;
+    color: var(--paper);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     text-align: center;
     pointer-events: none;
-    margin: 0 10px;
+    margin: 0 15px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 18px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
   
   .hint-mobile { display: none; }
@@ -236,10 +240,15 @@
     .nav-btn { width: 34px; height: 34px; font-size: 14px; }
     .cover-title { font-size: 32px; }
     
-    /* Swap the instructions on smaller screens */
+    /* Responsive adjustment for the pill badge */
     .hint-desktop { display: none; }
     .hint-mobile { display: inline; }
-    .controls-hint { font-size: 10px; letter-spacing: 0.05em; }
+    .controls-hint { 
+      font-size: 10px; 
+      letter-spacing: 0.05em; 
+      padding: 6px 12px; 
+      margin: 0 5px; 
+    }
   }
 </style>
 </head>
@@ -297,8 +306,8 @@
   <button class="nav-btn" id="btn-prev" onclick="navPrev()">&#9664;</button>
   
   <div class="controls-hint">
-    <span class="hint-desktop">Swipe, use arrows, or tap thumbnails to navigate</span>
-    <span class="hint-mobile">Swipe or use arrows to turn pages</span>
+    <span class="hint-desktop">Swipe, use arrows, or tap thumbnails</span>
+    <span class="hint-mobile">Swipe or use arrows</span>
   </div>
   
   <button class="nav-btn" id="btn-next" onclick="navNext()">&#9654;</button>
