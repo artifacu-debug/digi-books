@@ -165,7 +165,7 @@
   .under-page { z-index: 5; }
   .under-page img, #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
 
-  #controls {
+ #controls {
     position: fixed; bottom: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: center;
     gap: 20px; padding: 22px 36px 32px;
@@ -173,14 +173,14 @@
     z-index: 100;
   }
   
-  /* ENLARGED BUTTONS for better touch targets */
+  /* REVERTED BUTTONS to original size and sharp corners */
   .nav-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 44px; height: 44px; 
+    width: 40px; height: 40px; 
     border: 1px solid rgba(255,255,255,0.2);
     background: transparent; color: var(--paper);
-    cursor: pointer; transition: all 0.2s; font-size: 18px;
-    border-radius: 4px;
+    cursor: pointer; transition: all 0.2s; font-size: 16px;
+    /* Removed border-radius */
   }
   .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
   .nav-btn:disabled { opacity: 0.15; cursor: default; }
@@ -225,15 +225,17 @@
     z-index: 90; max-height: 70vh; overflow-y: auto; scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
-  /* ENLARGED THUMBNAILS for easier iPad tapping */
+  /* Kept thumbnails enlarged and rounded */
   .thumb { width: 48px; height: 36px; overflow: hidden; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0; border-radius: 2px;}
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   
+  /* REVERTED TOP BUTTONS to original size and sharp corners */
   .home-btn, .fs-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; background: transparent; border: 1px solid rgba(255,255,255,0.2);
-    color: var(--mid); cursor: pointer; transition: all 0.2s ease; border-radius: 4px;
+    color: var(--mid); cursor: pointer; transition: all 0.2s ease;
+    /* Removed border-radius */
   }
   .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); border-color: rgba(255,255,255,0.5); }
 
@@ -242,7 +244,7 @@
     header { padding: 20px 28px; justify-content: space-between; }
     .page-counter { position: absolute; top: 60px; left: 0; width: 100%; text-align: center; }
     #controls { padding: 10px 15px 25px; gap: 10px; }
-    .nav-btn { width: 38px; height: 38px; font-size: 14px; }
+    .nav-btn { width: 34px; height: 34px; font-size: 14px; } /* Reverted mobile button size */
     .cover-title { font-size: 32px; }
     
     .hint-desktop { display: none; }
