@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>DigiBooks Library — Wolfsonian</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
@@ -21,6 +23,10 @@
     font-family: 'Source Sans 3', sans-serif;
     line-height: 1.6;
     overflow-x: hidden;
+    /* Kiosk protections */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   body::before {
@@ -59,15 +65,31 @@
 
   /* ── SORT CONTROLS ── */
   .controls-bar {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 40px;
   }
   
+  .controls-bar span {
+    color: var(--mid); 
+    font-size: 11px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.15em; 
+    margin-right: 12px;
+  }
+  
   .controls-bar select {
-    background: transparent;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f0f0f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    appearance: none;
+    -webkit-appearance: none;
     color: var(--paper);
     border: 1px solid rgba(255,255,255,0.2);
-    padding: 6px 12px;
+    border-radius: 0; /* Prevents iOS default rounding */
+    padding: 6px 32px 6px 14px;
     font-family: inherit;
     font-size: 12px;
     text-transform: uppercase;
@@ -103,6 +125,7 @@
     overflow: hidden;
     transition: all 0.5s cubic-bezier(0.2, 0, 0.2, 1);
     border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 0; /* Enforcing sharp corners */
     box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   }
 
@@ -156,6 +179,7 @@
   .btn-open {
     padding: 12px 30px;
     border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 0; /* Enforcing sharp corners */
     background: transparent;
     color: var(--paper);
     font-size: 10px; text-transform: uppercase;
@@ -189,7 +213,7 @@
 </header>
 
 <div class="controls-bar">
-  <span style="color: var(--mid); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; margin-right: 12px;">Sort By</span>
+  <span>Sort By</span>
   <select id="sort-select" onchange="sortBooks()">
     <option value="title-asc">Title (A-Z)</option>
     <option value="title-desc">Title (Z-A)</option>
@@ -201,7 +225,7 @@
 <main class="shelf-container" id="library-grid">
 
   <div class="book-card" data-title="Bruynzeel's Fabrieken Zaandam" data-year="1931" onclick="this.classList.toggle('active')">
-    <img src="bruynzeel/pages/1.webp" alt="Bruynzeel's Fabrieken Zaandam, 1931" class="book-cover">
+    <img src="bruynzeel/pages/1.webp" alt="Bruynzeel's Fabrieken Zaandam, 1931" class="book-cover" style="object-fit: contain; background: #fff;">
     <div class="book-overlay">
       <h2>Bruynzeel's Fabrieken, 1931</h2>
       <p>
@@ -390,6 +414,36 @@
     container.innerHTML = '';
     cards.forEach(card => container.appendChild(card));
   }
+
+  // KIOSK FEATURE: IDLE SCROLL RESET
+  const IDLE_TIMEOUT_MS = 180000; // 3 minutes
+  let idleTimer;
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      // Scroll back to the top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Reset the sorting back to alphabetical
+      document.getElementById('sort-select').value = 'title-asc';
+      sortBooks();
+      
+      // Close any open book overlays
+      document.querySelectorAll('.book-card.active').forEach(card => {
+        card.classList.remove('active');
+      });
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  // Listen for typical iPad kiosk interactions to reset the timer
+  document.addEventListener('touchstart', resetIdleTimer, { passive: true });
+  document.addEventListener('touchend', resetIdleTimer, { passive: true });
+  document.addEventListener('mousemove', resetIdleTimer);
+  document.addEventListener('scroll', resetIdleTimer, { passive: true });
+  
+  // Start timer on load
+  resetIdleTimer();
 </script>
 
 </body>
