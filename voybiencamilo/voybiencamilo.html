@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voy bien Camilo? — Wolfsonian DigiBooks</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #111;
+    --paper: #f0f0f0;
+    --mid: #999; 
+    --page-w: 640px;
+    --page-h: 461px;
+    --book-x: 0px; 
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--ink);
+    font-family: 'Source Sans 3', 'Aptos', 'Calibri', 'Segoe UI', Arial, sans-serif;
+    color: var(--paper);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none; z-index: 9998;
+  }
+
+  header {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px 14px;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(17,17,17,0.97) 70%, transparent);
+  }
+  
+  .wordmark {
+    font-weight: 600; font-size: 14px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--paper);
+  }
+  
+  .page-counter {
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--mid); text-transform: uppercase; font-weight: 300;
+  }
+  
+  .page-counter span { color: var(--paper); font-weight: 600; }
+
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 2200px;
+  }
+
+  #book {
+    position: relative;
+    width: calc(var(--page-w) * 2);
+    height: var(--page-h);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.85));
+    flex-shrink: 0;
+    transform: translateX(var(--book-x));
+    transition: transform 0.72s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  }
+
+  #spine {
+    position: absolute; top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 8px;
+    background: linear-gradient(to right, #000, #2a2a2a, #000);
+    z-index: 50;
+    box-shadow: 0 0 18px rgba(0,0,0,0.9);
+  }
+
+  #intro-panel {
+    position: absolute; top: 0; left: 0;
+    width: var(--page-w); height: var(--page-h);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 12% 0 8%;
+    color: #d4d4d4;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+  }
+  #intro-panel h2 {
+    color: var(--paper); font-size: 22px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; line-height: 1.3;
+  }
+  #intro-panel .divider {
+    width: 40px; height: 1px; background: rgba(255,255,255,0.2); margin: 20px 0;
+  }
+  #intro-panel p {
+    font-size: 14px; font-weight: 300; line-height: 1.8;
+  }
+  
+  .instruction-text {
+    margin-top: 32px;
+    font-size: 15px; 
+    color: #bbb; 
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+  .hint-arrow {
+    display: inline-block;
+    font-size: 18px;
+    margin-top: 4px;
+    animation: pointRight 1.5s infinite ease-in-out;
+  }
+  @keyframes pointRight {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(8px); }
+  }
+
+  .page {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 0.72s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+    cursor: pointer;
+    will-change: transform;
+  }
+  .page.right-side { right: 0; transform-origin: right center; }
+
+  .page-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    transform: translateZ(0); 
+  }
+  .page-front { background: #fff; }
+  .page-back  { background: #fff; transform: rotateY(180deg); }
+  
+  .page-face img { 
+    width: 100%; height: 100%; 
+    object-fit: contain; display: block; 
+    pointer-events: none; background: #fff;
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  .page-face::after, .under-page::after, #left-panel::after, #right-panel::after { 
+    content: ''; position: absolute; inset: 0; pointer-events: none; 
+  }
+  
+  .page-front::after { background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); }
+  .page-back::after  { background: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 4%, rgba(255,255,255,0.15) 8%, transparent 25%); }
+
+  #left-panel, #right-panel, .under-page {
+    position: absolute; top: 0;
+    width: var(--page-w); height: var(--page-h);
+    overflow: hidden; transform: translateZ(0);
+  }
+  #left-panel { left: 0; }
+  #right-panel { right: 0; }
+  #left-panel::after, .under-page.left-side::after { background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 4%, rgba(255,255,255,0.1) 8%, transparent 25%); }
+  #right-panel::after, .under-page.right-side::after { background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 4%, rgba(255,255,255,0.1) 8%, transparent 25%); }
+
+  .under-page { z-index: 5; }
+  .under-page img, #left-panel img, #right-panel img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
+
+  #controls {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; padding: 22px 36px 28px;
+    background: linear-gradient(to top, rgba(17,17,17,0.97) 60%, transparent);
+    z-index: 100;
+  }
+  .nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: var(--paper);
+    cursor: pointer; transition: all 0.2s; font-size: 16px;
+  }
+  .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+  .nav-btn:disabled { opacity: 0.15; cursor: default; }
+
+  #progress-track {
+    position: relative; width: 280px; height: 1px;
+    background: rgba(255,255,255,0.15); cursor: pointer;
+  }
+  
+  .track-dot {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); 
+    pointer-events: none; z-index: 1;
+  }
+
+  #progress-fill { position: relative; z-index: 2; height: 100%; background: var(--paper); transition: width 0.4s ease; pointer-events: none; }
+  #progress-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%); z-index: 3;
+    width: 8px; height: 8px; background: var(--paper);
+    border-radius: 50%; transition: left 0.4s ease; pointer-events: none;
+  }
+
+  #cover-page {
+    position: absolute; inset: 0; background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    transition: opacity 0.8s ease, pointer-events 0s 0.8s;
+  }
+  #cover-page.hidden { opacity: 0; pointer-events: none; }
+  .cover-inner { text-align: center; }
+  .cover-title {
+    font-size: 46px; font-weight: 300; letter-spacing: 0.12em;
+    line-height: 1.05; color: var(--paper);
+    margin-bottom: 10px; text-transform: uppercase;
+  }
+  .loading-text {
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--mid); margin-top: 40px; animation: pulse 1.5s infinite ease-in-out;
+  }
+
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  #thumb-strip {
+    position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px;
+    z-index: 90; max-height: 70vh; overflow-y: auto; scrollbar-width: none;
+  }
+  .thumb { width: 36px; height: 26px; overflow: hidden; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0; }
+  .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  
+  .home-btn, .fs-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--mid); cursor: pointer; transition: all 0.2s ease;
+  }
+  .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); border-color: rgba(255,255,255,0.5); }
+
+  @media (max-width: 800px) {
+    #thumb-strip { display: none !important; }
+    header { padding: 15px 20px; justify-content: space-between; }
+    .page-counter { position: absolute; top: 60px; left: 0; width: 100%; text-align: center; }
+    #controls { padding: 10px 15px 25px; gap: 10px; }
+    .nav-btn { width: 34px; height: 34px; font-size: 14px; }
+    #progress-track { width: 100px; }
+    .cover-title { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cover-page">
+  <div class="cover-inner">
+    <div class="cover-title">Voy bien Camilo?</div>
+    <div style="font-size:14px; font-weight:300; letter-spacing:0.25em; color:var(--mid); text-transform:uppercase;">1959</div>
+    <div class="loading-text">Loading Archive...</div>
+  </div>
+</div>
+
+<header>
+  <div class="wordmark">Wolfsonian</div>
+  <div class="page-counter">Page <span id="cur-page">1</span> of <span id="tot-pages">44</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+      <svg id="fs-expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+      <svg id="fs-compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+    </button>
+    <button class="home-btn" onclick="goHome()" title="Back to Library">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div id="thumb-strip"></div>
+
+<div id="stage">
+  <div id="book">
+    <div id="spine"></div>
+    <div id="intro-panel">
+      <h2>Voy bien Camilo?, 1959</h2>
+      <div class="divider"></div>
+      <p>Following the overthrow of President Fulgencio Batista in 1959 by Fidel Castro and his allies, graphic artist and magazine design director Conrado Massaguer published this book [Am I going well Camilo?] providing the first caricatures of the revolutionaries. Many of the included advertisements depict famous Cuban figures enjoying American brands like Coca-Cola, Buick, and Jell-O—soon to become off-limits in Cuba after Castro cut ties with the United States.</p>
+      <div class="instruction-text">
+        Swipe or use arrows below to navigate <br>
+        <span class="hint-arrow">→</span>
+      </div>
+    </div>
+    <div id="left-panel"><img id="left-img" src="" alt=""></div>
+    <div id="right-panel"><img id="right-img" src="" alt=""></div>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="nav-btn" id="btn-first" onclick="goToPage(0)">&#10073;&#9664;</button>
+  <button class="nav-btn" id="btn-prev" onclick="navPrev()">&#9664;</button>
+  <div id="progress-track" onclick="scrubTo(event)">
+    <div id="progress-fill"></div>
+    <div id="progress-thumb"></div>
+  </div>
+  <button class="nav-btn" id="btn-next" onclick="navNext()">&#9654;</button>
+  <button class="nav-btn" id="btn-last" onclick="goToPage(TOTAL_SPREADS-1)">&#9654;&#10073;</button>
+</div>
+
+<script>
+const TOTAL_IMAGES = 44;
+const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
+const IMG_DIR = 'pages/';
+const IMG_EXT = '.webp'; 
+
+let current = 0, isAnimating = false, PAGE_ASPECT = 680 / 490;
+let mobileSide = 'left'; 
+const loadedImages = new Set(); 
+
+const book = document.getElementById('book'), 
+      leftImg = document.getElementById('left-img'), 
+      rightImg = document.getElementById('right-img'),
+      curEl = document.getElementById('cur-page'), 
+      fillEl = document.getElementById('progress-fill'), 
+      thumbEl = document.getElementById('progress-thumb'),
+      thumbStrip = document.getElementById('thumb-strip'), 
+      introPanel = document.getElementById('intro-panel');
+
+function imgSrc(n) { return n ? IMG_DIR + n + IMG_EXT : ''; }
+
+function getSpread(s) {
+  if (s === 0) return { left: null, right: 1 };
+  if (s === TOTAL_SPREADS - 1) return { left: TOTAL_IMAGES, right: null };
+  return { left: s * 2, right: s * 2 + 1 };
+}
+
+function smartLoad(n) {
+  if (!n || loadedImages.has(n)) return;
+  const img = new Image(); img.src = imgSrc(n); loadedImages.add(n);
+}
+
+function manageAssets(s) {
+  [s, s + 1, s + 2, s - 1].forEach(num => {
+    if (num >= 0 && num < TOTAL_SPREADS) {
+      const sp = getSpread(num);
+      if (sp.left) smartLoad(sp.left);
+      if (sp.right) smartLoad(sp.right);
+    }
+  });
+}
+
+function applyBookTransform() {
+  const isMobile = window.innerWidth <= 800;
+  const pageW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--page-w'));
+  
+  let tx = 0;
+  if (isMobile) {
+    tx = mobileSide === 'left' ? (pageW / 2) : -(pageW / 2);
+  }
+  document.documentElement.style.setProperty('--book-x', tx + 'px');
+  updateNavButtons();
+}
+
+function navNext() {
+  if (isAnimating) return;
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+
+  if (isMobile && mobileSide === 'left') {
+    if (sp.right === null) return; 
+    mobileSide = 'right';
+    applyBookTransform();
+  } else {
+    if (current + 1 >= TOTAL_SPREADS) return;
+    mobileSide = 'left'; 
+    applyBookTransform();
+    turnPage(1);
+  }
+}
+
+function navPrev() {
+  if (isAnimating) return;
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+
+  if (isMobile && mobileSide === 'right') {
+    if (sp.left === null && current !== 0) return; 
+    mobileSide = 'left';
+    applyBookTransform();
+  } else {
+    if (current - 1 < 0) return;
+    mobileSide = 'right'; 
+    applyBookTransform();
+    turnPage(-1);
+  }
+}
+
+function updateNavButtons() {
+  const sp = getSpread(current);
+  const isMobile = window.innerWidth <= 800;
+  
+  document.getElementById('btn-first').disabled = current === 0 && (!isMobile || mobileSide === 'left');
+  document.getElementById('btn-prev').disabled  = current === 0 && (!isMobile || mobileSide === 'left');
+  
+  document.getElementById('btn-next').disabled  = (current >= TOTAL_SPREADS - 1) && (!isMobile || mobileSide === 'right' || sp.right === null);
+  document.getElementById('btn-last').disabled  = current >= TOTAL_SPREADS - 1;
+}
+
+function renderSpread(s) {
+  const sp = getSpread(s);
+  
+  if (sp.left) { 
+    leftImg.src = imgSrc(sp.left); 
+    document.getElementById('left-panel').style.visibility = 'visible'; 
+  } else { 
+    leftImg.src = ''; 
+    document.getElementById('left-panel').style.visibility = 'hidden'; 
+  }
+  
+  if (sp.right) { 
+    rightImg.src = imgSrc(sp.right); 
+    document.getElementById('right-panel').style.visibility = 'visible'; 
+  } else { 
+    rightImg.src = ''; 
+    document.getElementById('right-panel').style.visibility = 'hidden'; 
+  }
+
+  curEl.textContent = s === 0 ? 'Cover' : s === TOTAL_SPREADS - 1 ? 'Back' : sp.left + '–' + sp.right;
+  const pct = (s / (TOTAL_SPREADS - 1)) * 100;
+  fillEl.style.width = pct + '%'; 
+  thumbEl.style.left = pct + '%';
+  introPanel.style.opacity = (s === 0) ? '1' : '0';
+
+  document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === s));
+  
+  manageAssets(s);
+  applyBookTransform();
+}
+
+function turnPage(dir) {
+  isAnimating = true;
+  const next = current + dir; 
+  const curSp = getSpread(current), nextSp = getSpread(next);
+  const page = document.createElement('div'); 
+  page.className = 'page'; page.style.zIndex = '10'; 
+  
+  const front = document.createElement('div'); front.className = 'page-face page-front';
+  const back = document.createElement('div'); back.className = 'page-face page-back';
+  const fi = document.createElement('img'), bi = document.createElement('img');
+  
+  const underPage = document.createElement('div'), underImg = document.createElement('img');
+  underPage.className = 'under-page ' + (dir > 0 ? 'right-side' : 'left-side');
+
+  if (dir > 0) {
+    underPage.style.right = '0';
+    if (nextSp.right) { underImg.src = imgSrc(nextSp.right); underPage.appendChild(underImg); book.appendChild(underPage); }
+    fi.src = imgSrc(curSp.right); bi.src = imgSrc(nextSp.left);
+    page.style.right = '0'; page.style.transformOrigin = 'left center';
+  } else {
+    underPage.style.left = '0';
+    if (nextSp.left) { underImg.src = imgSrc(nextSp.left); underPage.appendChild(underImg); book.appendChild(underPage); }
+    fi.src = imgSrc(curSp.left); bi.src = imgSrc(nextSp.right);
+    page.style.left = '0'; page.style.transformOrigin = 'right center';
+  }
+
+  front.appendChild(fi); back.appendChild(bi); 
+  page.appendChild(front); page.appendChild(back); 
+  book.appendChild(page);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => { 
+    page.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(180deg)'; 
+  }));
+
+  page.addEventListener('transitionend', () => {
+    current = next; 
+    renderSpread(current);
+    if (page.parentNode) book.removeChild(page); 
+    if (underPage.parentNode) book.removeChild(underPage);
+    isAnimating = false;
+  }, { once: true });
+}
+
+function resizeBook() {
+  const isMobile = window.innerWidth <= 800;
+  let pageW, pageH;
+
+  if (isMobile) {
+    const availW = window.innerWidth - 20; 
+    const availH = window.innerHeight - 160; 
+    pageW = Math.min(1360, availW); 
+    pageH = Math.round(pageW / PAGE_ASPECT);
+    
+    if (pageH > availH) { 
+      pageH = availH; 
+      pageW = Math.round(pageH * PAGE_ASPECT); 
+    }
+  } else {
+    const availW = window.innerWidth - 140; 
+    const availH = window.innerHeight - 170; 
+    pageW = Math.floor(availW / 2); 
+    pageH = Math.round(pageW / PAGE_ASPECT);
+    
+    if (pageH > availH) { 
+      pageH = availH; 
+      pageW = Math.round(pageH * PAGE_ASPECT); 
+    }
+    
+    if (pageW > 1360) {
+      pageW = 1360;
+      pageH = Math.round(pageW / PAGE_ASPECT);
+    }
+  }
+
+  document.documentElement.style.setProperty('--page-w', pageW + 'px'); 
+  document.documentElement.style.setProperty('--page-h', pageH + 'px');
+  
+  applyBookTransform();
+}
+
+function goHome() { location.href = '../index.html'; } 
+function goToPage(s) { 
+  if (!isAnimating && s !== current) { 
+    current = s; 
+    mobileSide = 'left'; 
+    renderSpread(s); 
+  } 
+}
+function scrubTo(e) { const pct = Math.max(0, Math.min(1, (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.offsetWidth)); goToPage(Math.round(pct * (TOTAL_SPREADS - 1))); }
+
+function buildThumbs() {
+  for (let s = 0; s < TOTAL_SPREADS; s++) {
+    const sp = getSpread(s), d = document.createElement('div');
+    d.className = 'thumb'; 
+    d.innerHTML = `<img src="${imgSrc(sp.right || sp.left)}" loading="lazy">`;
+    d.onclick = () => goToPage(s); 
+    thumbStrip.appendChild(d);
+  }
+}
+
+function buildTrackDots() {
+  const track = document.getElementById('progress-track');
+  for (let s = 0; s < TOTAL_SPREADS; s++) {
+    const dot = document.createElement('div');
+    dot.className = 'track-dot';
+    dot.style.left = (s / (TOTAL_SPREADS - 1)) * 100 + '%';
+    track.appendChild(dot);
+  }
+}
+
+let touchStartX = null, touchStartY = null;
+document.getElementById('stage').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('stage').addEventListener('touchend', e => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? navNext() : navPrev(); }
+  touchStartX = null; touchStartY = null;
+}, { passive: true });
+document.getElementById('left-panel').addEventListener('click',  () => navPrev());
+document.getElementById('right-panel').addEventListener('click', () => navNext());
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') navNext();
+  if (e.key === 'ArrowLeft') navPrev();
+});
+
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.getElementById('fs-expand').style.display = isFs ? 'none' : 'block';
+  document.getElementById('fs-compress').style.display = isFs ? 'block' : 'none';
+  setTimeout(resizeBook, 100);
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => console.error(e));
+  else document.exitFullscreen();
+}
+
+function detectAspectAndInit() {
+  let loadedCount = 0; const initialImages = [1, 2, 3, 4, 5]; 
+  initialImages.forEach(num => {
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      loadedCount++; 
+      if (num === 1 && img.naturalWidth) PAGE_ASPECT = img.naturalWidth / img.naturalHeight;
+      if (loadedCount === initialImages.length) { 
+        init(); 
+        setTimeout(() => { document.getElementById('cover-page').classList.add('hidden'); }, 600); 
+      }
+    };
+    img.src = imgSrc(num); 
+    loadedImages.add(num);
+  });
+}
+
+function init() { 
+  resizeBook(); 
+  window.addEventListener('resize', resizeBook); 
+  buildThumbs(); 
+  buildTrackDots();
+  document.getElementById('tot-pages').textContent = TOTAL_IMAGES; 
+  renderSpread(0); 
+}
+
+detectAspectAndInit();
+</script>
+</body>
+</html>
