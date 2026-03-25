@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Loose Lyrics of Lovely Ladies — Wolfsonian DigiBooks</title>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
@@ -24,6 +26,8 @@
     color: var(--paper);
     overflow: hidden;
     user-select: none;
+    -webkit-user-select: none; /* Extra protection for iPads */
+    -webkit-touch-callout: none; /* Prevents long-press popups on images */
   }
 
   body::after {
@@ -96,6 +100,7 @@
     margin-right: 4%; 
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.2) transparent;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
   
   .intro-scroll-area::-webkit-scrollbar { width: 4px; }
@@ -163,34 +168,32 @@
   #controls {
     position: fixed; bottom: 0; left: 0; right: 0;
     display: flex; align-items: center; justify-content: center;
-    gap: 20px; padding: 22px 36px 28px;
+    gap: 20px; padding: 22px 36px 32px;
     background: linear-gradient(to top, rgba(17,17,17,0.97) 60%, transparent);
     z-index: 100;
   }
+  
+  /* ENLARGED BUTTONS for better touch targets */
   .nav-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px;
+    width: 44px; height: 44px; 
     border: 1px solid rgba(255,255,255,0.2);
     background: transparent; color: var(--paper);
-    cursor: pointer; transition: all 0.2s; font-size: 16px;
+    cursor: pointer; transition: all 0.2s; font-size: 18px;
+    border-radius: 4px;
   }
   .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
   .nav-btn:disabled { opacity: 0.15; cursor: default; }
 
-  /* ── "PILL" STYLE INSTRUCTIONAL HINT ── */
   .controls-hint {
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--paper);
+    font-size: 13px;
+    font-weight: 300;
+    color: #d4d4d4;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     text-align: center;
     pointer-events: none;
     margin: 0 15px;
-    background: rgba(255, 255, 255, 0.08);
-    padding: 8px 18px;
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
   }
   
   .hint-mobile { display: none; }
@@ -218,17 +221,19 @@
 
   #thumb-strip {
     position: fixed; left: 28px; top: 50%; transform: translateY(-50%);
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column; gap: 6px;
     z-index: 90; max-height: 70vh; overflow-y: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
-  .thumb { width: 36px; height: 26px; overflow: hidden; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0; }
+  /* ENLARGED THUMBNAILS for easier iPad tapping */
+  .thumb { width: 48px; height: 36px; overflow: hidden; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; opacity: 0.3; flex-shrink: 0; border-radius: 2px;}
   .thumb.active { opacity: 1; border-color: rgba(255,255,255,0.65); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; }
   
   .home-btn, .fs-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; background: transparent; border: 1px solid rgba(255,255,255,0.2);
-    color: var(--mid); cursor: pointer; transition: all 0.2s ease;
+    color: var(--mid); cursor: pointer; transition: all 0.2s ease; border-radius: 4px;
   }
   .home-btn:hover, .fs-btn:hover { background: rgba(255,255,255,0.1); color: var(--paper); border-color: rgba(255,255,255,0.5); }
 
@@ -237,18 +242,12 @@
     header { padding: 20px 28px; justify-content: space-between; }
     .page-counter { position: absolute; top: 60px; left: 0; width: 100%; text-align: center; }
     #controls { padding: 10px 15px 25px; gap: 10px; }
-    .nav-btn { width: 34px; height: 34px; font-size: 14px; }
+    .nav-btn { width: 38px; height: 38px; font-size: 14px; }
     .cover-title { font-size: 32px; }
     
-    /* Responsive adjustment for the pill badge */
     .hint-desktop { display: none; }
     .hint-mobile { display: inline; }
-    .controls-hint { 
-      font-size: 10px; 
-      letter-spacing: 0.05em; 
-      padding: 6px 12px; 
-      margin: 0 5px; 
-    }
+    .controls-hint { font-size: 11px; letter-spacing: 0.05em; }
   }
 </style>
 </head>
@@ -306,7 +305,7 @@
   <button class="nav-btn" id="btn-prev" onclick="navPrev()">&#9664;</button>
   
   <div class="controls-hint">
-    <span class="hint-desktop">Swipe, use arrows, or tap thumbnails</span>
+    <span class="hint-desktop">Use arrows or tap thumbnails</span>
     <span class="hint-mobile">Swipe or use arrows</span>
   </div>
   
@@ -319,10 +318,12 @@ const TOTAL_IMAGES = 62;
 const TOTAL_SPREADS = Math.floor(TOTAL_IMAGES / 2) + 1;
 const IMG_DIR = 'pages/';
 const IMG_EXT = '.webp'; 
+const IDLE_TIMEOUT_MS = 180000; // 3 minutes
 
 let current = 0, isAnimating = false, PAGE_ASPECT = 680 / 490;
 let mobileSide = 'left'; 
 const loadedImages = new Set(); 
+let idleTimer;
 
 const book = document.getElementById('book'), 
       leftImg = document.getElementById('left-img'), 
@@ -381,6 +382,7 @@ function navNext() {
     applyBookTransform();
     turnPage(1);
   }
+  resetIdleTimer();
 }
 
 function navPrev() {
@@ -398,6 +400,7 @@ function navPrev() {
     applyBookTransform();
     turnPage(-1);
   }
+  resetIdleTimer();
 }
 
 function updateNavButtons() {
@@ -528,6 +531,7 @@ function goToPage(s) {
     mobileSide = 'left'; 
     renderSpread(s); 
   } 
+  resetIdleTimer();
 }
 
 function buildThumbs() {
@@ -540,22 +544,36 @@ function buildThumbs() {
   }
 }
 
+// KIOSK FEATURE: IDLE TIMER
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    // Redirects back to the main library index after 3 minutes of inactivity
+    window.location.href = '../index.html'; 
+  }, IDLE_TIMEOUT_MS);
+}
+
 let touchStartX = null, touchStartY = null;
 document.getElementById('stage').addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+  resetIdleTimer();
 }, { passive: true });
+
 document.getElementById('stage').addEventListener('touchend', e => {
   if (touchStartX === null) return;
   const dx = e.changedTouches[0].clientX - touchStartX, dy = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { dx < 0 ? navNext() : navPrev(); }
   touchStartX = null; touchStartY = null;
 }, { passive: true });
-document.getElementById('left-panel').addEventListener('click',  () => navPrev());
-document.getElementById('right-panel').addEventListener('click', () => navNext());
+
+document.getElementById('left-panel').addEventListener('click',  () => { navPrev(); resetIdleTimer(); });
+document.getElementById('right-panel').addEventListener('click', () => { navNext(); resetIdleTimer(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' || e.key === ' ') navNext();
   if (e.key === 'ArrowLeft') navPrev();
+  resetIdleTimer();
 });
+document.addEventListener('mousemove', resetIdleTimer);
 
 document.addEventListener('fullscreenchange', () => {
   const isFs = !!document.fullscreenElement;
@@ -592,6 +610,7 @@ function init() {
   buildThumbs(); 
   document.getElementById('tot-pages').textContent = TOTAL_IMAGES; 
   renderSpread(0); 
+  resetIdleTimer(); // Start the timer when book loads
 }
 
 detectAspectAndInit();
